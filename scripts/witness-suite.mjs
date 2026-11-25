@@ -9,6 +9,7 @@ const commands = [
   ["npm", ["run", "secret:red-check"]],
   ["npm", ["run", "build"]],
   ["npm", ["run", "restart:recovery"]],
+  ["npm", ["run", "live:reconcile"]],
   ["npm", ["run", "live:inventory"]],
   ["npm", ["run", "live:voice"]],
   ["git", ["check-ignore", "-v", ".env"]]

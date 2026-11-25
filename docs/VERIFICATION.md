@@ -10,6 +10,7 @@
 | Secret scan | npm run secret:scan and npm run secret:red-check | Worktree and history are clean; a token-like temporary fixture is detected |
 | Build | npm run build | dist/cli.js and dist/voice/worker.js exist |
 | Restart recovery | npm run restart:recovery | Two service PIDs start and stop cleanly; no orphan process remains |
+| Startup reconciliation | npm run live:reconcile | A signed kind 30078 channel snapshot is accepted by at least one relay |
 | Live inventory | npm run live:inventory | Discord and zellous room inventories have equal type, name, position, parent and topic |
 | Live voice smoke | npm run live:voice | At least two voice identities join and produce distinct per-user stream evidence; a missing pool is a defect, not a skip |
 

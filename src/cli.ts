@@ -1,6 +1,7 @@
 import { loadConfigFromEnvFile } from "./config.js";
 import { deriveSecretKey, loadOrCreateSeed, publicKeyHex, resolveServerId } from "./identity.js";
 import { liveInventory } from "./live/inventory.js";
+import { publishRoomSnapshot } from "./live/reconcile.js";
 import { voiceSmoke } from "./live/voice.js";
 import { BridgeService } from "./service.js";
 
@@ -22,6 +23,13 @@ async function main(): Promise<void> {
     const { config } = resolvedIdentity();
     const response = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health");
     console.log(JSON.stringify(await response.json()));
+    return;
+  }
+  if (command === "reconcile") {
+    const { config, serverId } = resolvedIdentity();
+    const result = await publishRoomSnapshot(config, serverId);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
     return;
   }
   if (command === "inventory") {

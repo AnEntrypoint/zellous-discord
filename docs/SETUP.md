@@ -5,7 +5,7 @@
 3. Create one Discord application and bot user per voice identity. Put every voice bot token in DISCORD_VOICE_TOKENS as a comma-separated list. Invite each bot to guild 367741339393327104 with View Channel, Connect, Speak and Request to Speak.
 4. Enable GUILDS, GUILD_MESSAGES, MESSAGE_CONTENT, GUILD_MESSAGE_REACTIONS, GUILD_MESSAGE_TYPING, GUILD_VOICE_STATES, GUILD_PRESENCES and GUILD_MEMBERS for the control bot. MESSAGE_CONTENT, GUILD_PRESENCES and GUILD_MEMBERS are privileged intents.
 5. Run npm ci --ignore-scripts, npm run typecheck, npm run unit, npm run integration, npm run secret:scan and npm run build.
-6. Run npm run serve for the bridge, npm run health for the local health endpoint, npm run live:inventory for a read-only inventory comparison and npm run live:voice for the voice smoke.
+6. Run npm run live:reconcile once to publish the deterministic Discord room snapshot to the configured relays. Then run npm run serve, npm run health, npm run live:inventory and npm run live:voice.
 
 The service generates its own persistent Nostr identity and writes it to the ignored data directory at mode 600. It never uses an owner personal key. Logs use structured redaction and never print secret values.
 

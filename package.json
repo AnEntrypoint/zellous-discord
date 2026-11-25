@@ -21,6 +21,7 @@
     "secret:red-check": "node scripts/secret-scan.mjs --self-test",
     "witness:suite": "node scripts/witness-suite.mjs",
     "full:window": "node scripts/full-window.mjs",
+    "live:reconcile": "node dist/cli.js reconcile",
     "live:inventory": "node dist/cli.js inventory",
     "live:voice": "node dist/cli.js voice-smoke",
     "restart:recovery": "node scripts/restart-recovery.mjs",
