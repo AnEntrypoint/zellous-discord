@@ -19,8 +19,8 @@ export class SyncEngine {
 
   async start(): Promise<void> {
     this.unsubscribers = [
-      await this.discord.subscribe((event) => this.ingest(event, "discord")),
-      await this.zellous.subscribe((event) => this.ingest(event, "zellous"))
+      await this.discord.subscribe(async (event) => { await this.ingest(event, "discord"); }),
+      await this.zellous.subscribe(async (event) => { await this.ingest(event, "zellous"); })
     ];
     await this.reconcile();
   }

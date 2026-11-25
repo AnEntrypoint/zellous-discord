@@ -46,7 +46,7 @@ export async function nostrInventory(config: Config, serverId: string, ownerPubk
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   try {
-    const event = await pool.get(config.nostrRelays, channelStateFilter(serverId, ownerPubkey), { maxWait: 8000 });
+    const event = await pool.get(config.nostrRelays, channelStateFilter(serverId, ownerPubkey) as any, { maxWait: 8000 });
     if (!event) return [];
     const state = parseChannelState(String(event.content));
     return state.channels.map((channel) => mapZellousChannelToRoom(channel as ZellousChannelLike, serverId, config.discordGuildId));

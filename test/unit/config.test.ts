@@ -27,6 +27,7 @@ test("config rejects duplicate voice tokens", () => {
 });
 
 test("env parser strips quotes and export prefixes", () => {
-  const text = ["export A="b"", "C=d", "# ignored"].join(nl);
+  const quote = String.fromCharCode(34);
+  const text = ["export A=" + quote + "b" + quote, "C=d", "# ignored"].join(nl);
   assert.deepEqual(parseEnvText(text), { A: "b", C: "d" });
 });

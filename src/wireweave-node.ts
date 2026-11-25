@@ -3,7 +3,7 @@ import { join } from "node:path";
 import * as NostrTools from "nostr-tools";
 import * as XState from "xstate";
 import WebSocket from "ws";
-import { createRtpRtcpRegister, installPolyfill } from "werift/polyfill";
+import { createEmptyRegister, installPolyfill } from "werift/polyfill";
 import { createWireweave } from "wireweave/wireweave";
 import type { Config } from "./config.js";
 
@@ -80,7 +80,7 @@ function fileStorage(stateDir: string) {
 }
 
 export function installNodeMediaGlobals(): void {
-  const uninstall = installPolyfill({ mediaRegister: [createRtpRtcpRegister()] });
+  const uninstall = installPolyfill({ mediaRegister: [createEmptyRegister()] });
   const target = globalThis as unknown as Record<string, unknown>;
   if (!target.navigator) target.navigator = { mediaDevices: { getUserMedia: async () => new NodeMediaStream() } };
   target.HTMLAudioElement = NodeAudioElement;

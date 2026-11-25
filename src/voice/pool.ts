@@ -22,7 +22,7 @@ export class VoiceWorkerPool {
 
   start(identity: string, direction: "discord-to-zellous" | "zellous-to-discord"): void {
     if (this.workers.has(identity)) return;
-    const worker = new Worker(this.workerUrl, { type: "module" });
+    const worker = new Worker(this.workerUrl);
     worker.on("message", (message: any) => {
       if (message.type === "routed") {
         this.router.write(message.frame);

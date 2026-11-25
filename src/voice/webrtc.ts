@@ -37,7 +37,7 @@ export class WeriftVoicePeer {
   }
 
   async addIce(candidate: unknown): Promise<void> {
-    await this.pc.addIceCandidate(candidate);
+    await this.pc.addIceCandidate(candidate as any);
   }
 
   writeFrame(frame: VoiceFrame): void {

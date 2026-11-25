@@ -31,7 +31,7 @@ export interface ZellousChannelLike {
   bitrate?: number | null;
   userLimit?: number | null;
   rateLimitPerUser?: number | null;
-  permissionOverwrites?: Array<{ id: string; type: string; allow: string; deny: string }>;
+  permissionOverwrites?: Array<{ id: string; type: "role" | "member"; allow: string; deny: string }>;
   archived?: boolean;
   locked?: boolean;
   autoArchiveDuration?: number | null;
