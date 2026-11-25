@@ -1,0 +1,20 @@
+name: bridge-ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run unit
+      - run: npm run integration
+      - run: npm run secret:scan
+      - run: npm run secret:red-check
+      - run: npm run build
