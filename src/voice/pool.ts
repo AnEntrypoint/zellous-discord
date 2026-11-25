@@ -1,4 +1,3 @@
-import { Worker } from "node:worker_threads";
 import { AudioRouter } from "./router.js";
 import type { VoiceFrame } from "../types.js";
 
@@ -10,75 +9,56 @@ export interface RoutedFrame {
 }
 
 export class VoiceWorkerPool {
-  private readonly workers = new Map<string, Worker>();
-  private readonly router = new AudioRouter();
+  private readonly workers = new Map<string, AudioRouter>();
   private readonly routed: RoutedFrame[] = [];
-  private readonly workerUrl: URL;
-
-  constructor() {
-    const workerFile = import.meta.url.endsWith(".ts") ? "./worker.ts" : "./worker.js";
-    this.workerUrl = new URL(workerFile, import.meta.url);
-  }
 
   start(identity: string, direction: "discord-to-zellous" | "zellous-to-discord"): void {
     if (this.workers.has(identity)) return;
-    const worker = new Worker(this.workerUrl);
-    worker.on("message", (message: any) => {
-      if (message.type === "routed") {
-        this.router.write(message.frame);
-        this.routed.push({ identity: message.identity, direction: message.direction, accepted: message.accepted, frame: message.frame });
-      }
-    });
-    this.workers.set(identity, worker);
-    this.router.ensure(identity, direction);
-    worker.postMessage({ type: "start", identity, direction });
+    const router = new AudioRouter();
+    router.ensure(identity, direction);
+    this.workers.set(identity, router);
   }
 
   send(identity: string, frame: VoiceFrame): void {
-    const worker = this.workers.get(identity);
-    if (!worker) throw new Error("voice worker not started for " + identity);
-    worker.postMessage({ type: "frame", frame });
+    const router = this.workers.get(identity);
+    if (!router) throw new Error("voice worker not started for " + identity);
+    const accepted = router.write(frame);
+    this.routed.push({ identity: frame.voiceId, direction: frame.direction, accepted, frame });
   }
 
   mute(identity: string, value: boolean): void {
-    this.router.setMuted(identity, value);
-    this.workers.get(identity)?.postMessage({ type: "mute", identity, value });
+    this.workers.get(identity)?.setMuted(identity, value);
   }
 
   deafen(identity: string, value: boolean): void {
-    this.router.setDeafened(identity, value);
-    this.workers.get(identity)?.postMessage({ type: "deafen", identity, value });
+    this.workers.get(identity)?.setDeafened(identity, value);
   }
 
   speaking(identity: string, value: boolean): void {
-    this.router.setSpeaking(identity, value);
-    this.workers.get(identity)?.postMessage({ type: "speaking", identity, value });
+    this.workers.get(identity)?.setSpeaking(identity, value);
   }
 
   leave(identity: string): void {
-    this.router.leave(identity);
-    this.workers.get(identity)?.postMessage({ type: "leave", identity });
+    this.workers.get(identity)?.leave(identity);
   }
 
   async stop(identity: string): Promise<void> {
-    const worker = this.workers.get(identity);
-    if (!worker) return;
-    worker.postMessage({ type: "stop" });
-    await worker.terminate();
+    const router = this.workers.get(identity);
+    if (!router) return;
+    router.close();
     this.workers.delete(identity);
   }
 
   async stopAll(): Promise<void> {
     for (const identity of Array.from(this.workers.keys())) await this.stop(identity);
-    this.router.close();
   }
 
   state(identity: string) {
-    return this.router.state(identity);
+    return this.workers.get(identity)?.state(identity);
   }
 
   frames(identity: string): VoiceFrame[] {
-    return this.router.frames(identity);
+    return this.workers.get(identity)?.frames(identity) ?? [];
   }
 
   routedFrames(): RoutedFrame[] {
