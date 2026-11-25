@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+data/
+node_modules/
+dist/
+coverage/
+.gm/
+.agentplug*
+*.log
+.DS_Store
