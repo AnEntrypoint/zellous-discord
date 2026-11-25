@@ -53,7 +53,7 @@ export interface Config {
 const schema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_VOICE_TOKENS: z.string().default(""),
-  DISCORD_GUILD_ID: z.string().regex(/^[0-9]{17,20}$/),
+  DISCORD_GUILD_ID: z.string().regex(/^[0-9]{17,20}$/).default("367741339393327104"),
   NOSTR_RELAYS: z.string().default(DEFAULT_RELAYS.join(",")),
   ZELLOUS_SERVER_ID: z.string().default("auto"),
   ZELLOUS_SERVER_D_TAG: z.string().min(1).default("discord-367741339393327104"),
