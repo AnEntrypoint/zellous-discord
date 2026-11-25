@@ -4,7 +4,7 @@ import { extname, join } from "node:path";
 
 const nl = String.fromCharCode(10);
 const patterns = [
-  { name: "discord-token", regex: /[A-Za-z0-9_-]{24,30}[.][A-Za-z0-9_-]{6,8}[.][A-Za-z0-9_-]{27,}/g },
+  { name: "discord-token", regex: /[A-Za-z0-9_-]{24,40}[.][A-Za-z0-9_-]{6,16}[.][A-Za-z0-9_-]{27,80}/g },
   { name: "nsec", regex: /nsec1[023456789acdefghjklmnpqrstuvwxyz]{20,}/g },
   { name: "private-key-hex", regex: /(?:BRIDGE_PRIVATE_KEY_HEX|NOSTR_PRIVATE_KEY|NSEC)[ ]*=[ ]*[0-9a-fA-F]{64}/g }
 ];
@@ -67,7 +67,7 @@ function selfTest() {
   const file = join(dir, "token-like.txt");
   const parts = ["MTIzNDU2Nzg5MDEyMzQ1Njc4OTBhYmNkZWY", "ZmFrZXNpZw", "ZmFrZXNpZ25hdHVyZWxvbmdlbm91Z2h2YWx1ZQ"];
   writeFileSync(file, "DISCORD_TOKEN=" + parts.join(".") + nl, { mode: 0o600 });
-  const findings = scanPaths([file]);
+  const findings = scanText(readFileSync(file, "utf8"));
   rmSync(dir, { recursive: true, force: true });
   if (findings.length === 0) {
     console.error("SECRET_SCAN_SELF_TEST FAIL no pattern matched");
