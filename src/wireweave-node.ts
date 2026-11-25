@@ -3,7 +3,7 @@ import { join } from "node:path";
 import * as NostrTools from "nostr-tools";
 import * as XState from "xstate";
 import WebSocket from "ws";
-import { RTCPeerConnection } from "werift";
+import { createRtpRtcpRegister, installPolyfill } from "werift/polyfill";
 import { createWireweave } from "wireweave/wireweave";
 import type { Config } from "./config.js";
 
@@ -80,15 +80,13 @@ function fileStorage(stateDir: string) {
 }
 
 export function installNodeMediaGlobals(): void {
+  const uninstall = installPolyfill({ mediaRegister: [createRtpRtcpRegister()] });
   const target = globalThis as unknown as Record<string, unknown>;
   if (!target.navigator) target.navigator = { mediaDevices: { getUserMedia: async () => new NodeMediaStream() } };
-  target.RTCPeerConnection = RTCPeerConnection;
-  target.RTCSessionDescription = NodeRTCSessionDescription;
-  target.RTCIceCandidate = NodeRTCIceCandidate;
-  target.MediaStream = NodeMediaStream;
   target.HTMLAudioElement = NodeAudioElement;
   target.AudioContext = NodeAudioContext;
   target.AudioWorkletNode = NodeAudioWorkletNode;
+  void uninstall;
 }
 
 export function createNodeWireweave(config: Config): any {
