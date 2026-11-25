@@ -1,0 +1,44 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { Logger } from "../../src/logger.js";
+import { Ledger } from "../../src/ledger.js";
+import { MappingStore } from "../../src/mapping.js";
+import { MockAdapter } from "../../src/adapters/mock.js";
+import { SyncEngine } from "../../src/sync/engine.js";
+
+const scratchRoot = "/config/workspace/tmp/zellous-discord/tests";
+const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+test("messages, reactions, attachments, corrections, typing, presence and profiles round-trip without duplicates", async () => {
+  const dir = join(scratchRoot, randomUUID());
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const ledger = new Ledger(join(dir, "ledger.jsonl"));
+  const mapping = new MappingStore(ledger);
+  const logger = new Logger("error", () => {});
+  const discord = new MockAdapter("discord");
+  const zellous = new MockAdapter("zellous");
+  const engine = new SyncEngine(discord, zellous, ledger, mapping, logger);
+  await engine.start();
+  const room = await discord.createRoom("text", "general");
+  await tick();
+  const attachment = { url: "https://example.invalid/file.png", mime: "image/png", size: 12, name: "file.png", width: null, height: null, durationMs: null };
+  const message = await discord.createMessage(room.roomId, "hello", { attachments: [attachment] });
+  await discord.addReaction(message.messageId, "plus");
+  await discord.correctMessage(message.messageId, "corrected");
+  await discord.deleteMessage(message.messageId);
+  await discord.setTyping("user-1");
+  await discord.setPresence({ userId: "user-1", status: "online", custom: "", until: 0, voiceChannelId: null, muted: false, deafened: false, speaking: false, lastSeen: Date.now() });
+  await discord.setProfile({ userId: "user-1", name: "User", avatarUrl: null, bannerUrl: null, accentColor: null, updatedAt: Date.now() });
+  await tick();
+  assert.equal(zellous.message(message.messageId)?.content, "corrected");
+  assert.equal(zellous.message(message.messageId)?.deleted, true);
+  assert.equal(zellous.message(message.messageId)?.attachments.length, 1);
+  assert.equal(zellous.message(message.messageId)?.reactions.length, 1);
+  assert.equal(mapping.getMessageByDiscordId(message.discordId ?? "")?.messageId, message.messageId);
+  assert.equal(ledger.getState().messages.size, 1);
+  await engine.stop();
+  rmSync(dir, { recursive: true, force: true });
+});
