@@ -33,10 +33,14 @@
     "nostr-tools": "2.26.1",
     "opusscript": "0.0.8",
     "werift": "0.28.0",
+    "wireweave": "github:AnEntrypoint/wireweave#4508d66ff4cd3fde31959cc8b998810f367be321",
+    "ws": "8.23.0",
+    "xstate": "5.33.4",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
+    "@types/ws": "8.18.2",
     "tsx": "4.23.15",
     "typescript": "5.9.3"
   }

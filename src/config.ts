@@ -52,8 +52,8 @@ export interface Config {
 
 const schema = z.object({
   DISCORD_TOKEN: z.string().min(1),
+  DISCORD_VOICE_TOKENS: z.string().default(""),
   DISCORD_GUILD_ID: z.string().regex(/^[0-9]{17,20}$/),
-  DISCORD_VOICE_TOKEN_COUNT: z.coerce.number().int().min(0).max(32).default(0),
   NOSTR_RELAYS: z.string().default(DEFAULT_RELAYS.join(",")),
   ZELLOUS_SERVER_ID: z.string().default("auto"),
   ZELLOUS_SERVER_D_TAG: z.string().min(1).default("discord-367741339393327104"),
@@ -94,22 +94,27 @@ function parseRelays(value: string): string[] {
   return relays;
 }
 
+function parseVoiceTokens(pool: string, environment: Record<string, string>): SecretString[] {
+  const values = pool.split(",").map((item) => item.trim()).filter((value) => value.length > 0 && !isPlaceholder(value));
+  for (let index = 1; index <= 64; index += 1) {
+    const value = environment["DISCORD_VOICE_TOKEN_" + String(index)];
+    if (value && !isPlaceholder(value)) values.push(value);
+  }
+  const unique = [...new Set(values)];
+  if (unique.length !== values.length) throw new Error("DISCORD_VOICE_TOKENS contains a duplicate token");
+  return unique.map((value) => new SecretString(value));
+}
+
 export function loadConfig(environment: Record<string, string>): Config {
   const parsed = schema.parse(environment);
-  const voiceTokens: SecretString[] = [];
-  for (let index = 1; index <= parsed.DISCORD_VOICE_TOKEN_COUNT; index += 1) {
-    const key = "DISCORD_VOICE_TOKEN_" + String(index);
-    const value = environment[key];
-    if (!value || isPlaceholder(value)) throw new Error(key + " is required and must not be a placeholder");
-    voiceTokens.push(new SecretString(value));
-  }
+  const voiceTokens = parseVoiceTokens(parsed.DISCORD_VOICE_TOKENS, environment);
   if (isPlaceholder(parsed.DISCORD_TOKEN)) throw new Error("DISCORD_TOKEN must not be a placeholder");
   if (parsed.BRIDGE_PRIVATE_KEY_HEX && !/^[0-9a-fA-F]{64}$/.test(parsed.BRIDGE_PRIVATE_KEY_HEX)) throw new Error("BRIDGE_PRIVATE_KEY_HEX must be 64 hex characters");
   return {
     discordToken: new SecretString(parsed.DISCORD_TOKEN),
     discordGuildId: parsed.DISCORD_GUILD_ID,
     voiceTokens,
-    voiceIdentityCapacity: parsed.DISCORD_VOICE_TOKEN_COUNT,
+    voiceIdentityCapacity: voiceTokens.length,
     nostrRelays: parseRelays(parsed.NOSTR_RELAYS),
     zellousServerId: parsed.ZELLOUS_SERVER_ID,
     zellousServerDTag: parsed.ZELLOUS_SERVER_D_TAG,

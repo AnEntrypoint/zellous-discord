@@ -4,13 +4,11 @@ import { loadConfig, parseEnvText, SecretString } from "../../src/config.js";
 
 const nl = String.fromCharCode(10);
 
-test("typed config loads secrets as opaque values", () => {
+test("typed config loads the comma-separated voice token pool", () => {
   const config = loadConfig({
     DISCORD_TOKEN: "control-token",
-    DISCORD_GUILD_ID: "367741339393327104",
-    DISCORD_VOICE_TOKEN_COUNT: "2",
-    DISCORD_VOICE_TOKEN_1: "voice-token-1",
-    DISCORD_VOICE_TOKEN_2: "voice-token-2"
+    DISCORD_VOICE_TOKENS: "voice-token-1,voice-token-2",
+    DISCORD_GUILD_ID: "367741339393327104"
   });
   assert.equal(config.discordGuildId, "367741339393327104");
   assert.equal(config.voiceIdentityCapacity, 2);
@@ -20,12 +18,12 @@ test("typed config loads secrets as opaque values", () => {
   assert.equal(new SecretString("value").reveal(), "value");
 });
 
-test("config rejects missing voice pool entries", () => {
+test("config rejects duplicate voice tokens", () => {
   assert.throws(() => loadConfig({
     DISCORD_TOKEN: "control-token",
-    DISCORD_GUILD_ID: "367741339393327104",
-    DISCORD_VOICE_TOKEN_COUNT: "1"
-  }), /required/);
+    DISCORD_VOICE_TOKENS: "same-token,same-token",
+    DISCORD_GUILD_ID: "367741339393327104"
+  }), /duplicate/);
 });
 
 test("env parser strips quotes and export prefixes", () => {

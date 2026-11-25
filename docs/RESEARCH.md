@@ -26,7 +26,7 @@ Discord Gateway intents are mandatory on API v8 and above. MESSAGE_CONTENT is pr
 
 Discord voice uses a Gateway voice state update with guild_id and channel_id, then a separate voice WebSocket and UDP connection. Voice gateway version 8 is recommended. Opus audio uses two channels and a 48000 Hz sample rate. Voice gateway compatible encryption modes always include aead_xchacha20_poly1305_rtpsize and may include aead_aes256_gcm_rtpsize. A 32 byte secret_key arrives in Opcode 4 Session Description. Speaking uses Opcode 5 and a nonzero bitmask. Resume uses sequence numbers and Opcode 7. DAVE end-to-end encryption is supported by the current voice stack. Sources: https://docs.discord.com/developers/topics/voice-connections and https://daveprotocol.com
 
-Discord voice state carries one guild_id, one channel_id and one user_id per voice session. A single bot user therefore occupies one voice channel per guild. Distinct simultaneous Discord voice identities in the same guild require distinct bot users and distinct bot tokens. The bridge declares DISCORD_VOICE_TOKEN_COUNT and DISCORD_VOICE_TOKEN_1 through DISCORD_VOICE_TOKEN_N in .env.example. Sources: https://docs.discord.com/developers/topics/voice-connections and https://docs.discord.com/developers/resources/voice
+Discord voice state carries one guild_id, one channel_id and one user_id per voice session. A single bot user therefore occupies one voice channel per guild. Distinct simultaneous Discord voice identities in the same guild require distinct bot users and distinct bot tokens. The bridge declares DISCORD_VOICE_TOKENS as a comma-separated pool in .env.example. Sources: https://docs.discord.com/developers/topics/voice-connections and https://docs.discord.com/developers/resources/voice
 
 Package versions read from the npm registry on 2026-11-25: discord.js 14.28.1, @discordjs/voice 0.19.2, nostr-tools 2.26.1, werift 0.28.0, zod 4.6.7, typescript 5.9.3, tsx 4.23.15, opusscript 0.0.8.
 
@@ -37,3 +37,11 @@ werift 0.28.0 provides a browser-compatible RTCPeerConnection model in Node.js w
 ## Operational facts
 
 The local .env is ignored, mode 600, and contains only a control token value in this checkout. The token value was never copied into a transcript, source file, log or report. The GitHub repository AnEntrypoint/zellous-discord is public and main is the working branch.
+
+## Updated research appended by the dispatcher
+
+The pinned wireweave commit also documents npm installation from GitHub and Node usage with injected nostrTools, xstate, storage, ws and a browser-shaped WebRTC polyfill. createWireweave requires nostrTools, xstate and a storage adapter outside the browser; the relay pool accepts WebSocketImpl and relays. Voice sessions accept createPeerConnection and rely on a polyfilled global RTCPeerConnection. Sources: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/README.md#L14 and https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/wireweave.js#L32-L48
+
+Official Discord webhook documentation establishes per-execution username and avatar_url overrides, POST, PATCH and DELETE message endpoints, no bot user requirement, a global REST limit of 50 requests per second, and privileged intent bit encodings GUILD_MEMBERS 1 << 1, GUILD_PRESENCES 1 << 8 and MESSAGE_CONTENT 1 << 15. One bot token authenticates one bot user and a standard guild voice state is singular for guild_id and user_id. Gateway Opcode 4 has no user_id, so a second join in the same guild moves the same user and invalidates the previous voice session. N distinct simultaneous Discord voice participants therefore need N distinct bot tokens. Sources: https://docs.discord.com/developers/resources/webhook and https://docs.discord.com/developers/topics/voice-connections
+
+The owner direction names the credential DISCORD_VOICE_TOKENS. The exact shape is a comma-separated pool; every entry is a separate bot token for a separate bot user installed in guild 367741339393327104 with CONNECT and SPEAK. Excess speakers are queued when the pool is exhausted; mixing is never a substitute for distinct voice identities.

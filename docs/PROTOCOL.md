@@ -42,7 +42,7 @@ signalType is offer, answer or ice. sdp carries an offer or answer. iceCandidate
 
 Voice room id is zellous plus the first 16 hex characters of SHA-256 of serverId plus colon plus voice plus colon plus channel name. Voice presence uses replaceable kind 30078 with d tag zellous-voice:roomId and action, channel and server tags. WebRTC signals use replaceable kind 30078 with d tag zellous-rtc:roomId:fromPubkey:toPubkey:type:sequence, p tag toPubkey and r tag roomId. Content is JSON with type and data.
 
-Discord voice uses Opus at 48000 Hz with two channels, Gateway voice state updates, voice WebSocket version 8, UDP transport, a 32 byte secret_key, nonzero speaking bitmask and DAVE support. Distinct simultaneous Discord voice identities require distinct bot users, declared as DISCORD_VOICE_TOKEN_COUNT and DISCORD_VOICE_TOKEN_1 through DISCORD_VOICE_TOKEN_N. Sources: https://docs.discord.com/developers/topics/voice-connections, https://docs.discord.com/developers/events/gateway, https://unpkg.com/@discordjs/voice@0.19.2/README.md, https://discord.js.org/docs/packages/voice/main/VoiceReceiver:Class and https://unpkg.com/werift@0.28.0/README.md
+Discord voice uses Opus at 48000 Hz with two channels, Gateway voice state updates, voice WebSocket version 8, UDP transport, a 32 byte secret_key, nonzero speaking bitmask and DAVE support. Distinct simultaneous Discord voice identities require distinct bot users, declared as DISCORD_VOICE_TOKENS. Sources: https://docs.discord.com/developers/topics/voice-connections, https://docs.discord.com/developers/events/gateway, https://unpkg.com/@discordjs/voice@0.19.2/README.md, https://discord.js.org/docs/packages/voice/main/VoiceReceiver:Class and https://unpkg.com/werift@0.28.0/README.md
 
 ## Operations and convergence
 
@@ -52,4 +52,4 @@ Messages, reactions, attachments, corrections, deletions, typing, presence and p
 
 ## Credential and secret contract
 
-DISCORD_TOKEN is the control bot token. DISCORD_VOICE_TOKEN_COUNT declares the number of separate voice bot users. DISCORD_VOICE_TOKEN_1 through DISCORD_VOICE_TOKEN_N are their tokens. BRIDGE_PRIVATE_KEY_HEX is optional; when absent the service persists a generated seed in the ignored state directory at mode 600. Secret values are wrapped in SecretString, redacted by the logger, excluded from fixtures and reports, and scanned in the worktree and git history.
+DISCORD_TOKEN is the control bot token. DISCORD_VOICE_TOKENS is a comma-separated pool of distinct voice bot tokens. BRIDGE_PRIVATE_KEY_HEX is optional; when absent the service persists a generated seed in the ignored state directory at mode 600. Secret values are wrapped in SecretString, redacted by the logger, excluded from fixtures and reports, and scanned in the worktree and git history.
