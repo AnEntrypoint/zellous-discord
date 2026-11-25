@@ -10,3 +10,5 @@
 The service generates its own persistent Nostr identity and writes it to the ignored data directory at mode 600. It never uses an owner personal key. Logs use structured redaction and never print secret values.
 
 If DISCORD_VOICE_TOKENS has fewer than two entries, live voice smoke fails with VOICE_POOL_INSUFFICIENT. This is an owner credential gap, not a skipped check. Mixed audio is never used as a substitute.
+
+Read docs/OPERATOR_RUNBOOK.md before supplying credentials or resuming the final window. It states the exact DISCORD_VOICE_TOKENS shape, privileged intents, per-bot permissions, relay-set choice, token redaction rules and the reason publication is held.
