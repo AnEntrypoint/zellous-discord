@@ -19,6 +19,9 @@
     "check": "npm run typecheck && npm run unit",
     "secret:scan": "node scripts/secret-scan.mjs",
     "secret:red-check": "node scripts/secret-scan.mjs --self-test",
+    "live:alignment": "node scripts/live-alignment.mjs",
+    "alignment:red-check": "node scripts/live-alignment.mjs --self-test",
+    "config:check": "node scripts/config-check.mjs",
     "witness:suite": "node scripts/witness-suite.mjs",
     "full:window": "node scripts/full-window.mjs",
     "live:reconcile": "node dist/cli.js reconcile",
@@ -34,7 +37,7 @@
     "nostr-tools": "2.26.1",
     "opusscript": "0.0.8",
     "werift": "0.28.0",
-    "wireweave": "github:AnEntrypoint/wireweave#4508d66ff4cd3fde31959cc8b998810f367be321",
+    "wireweave": "github:AnEntrypoint/wireweave#2e364df5f45b29e8f5cf6e747a0c2e9781352e0d",
     "ws": "8.23.0",
     "xstate": "5.33.4",
     "zod": "4.6.7"

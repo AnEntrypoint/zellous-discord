@@ -15,3 +15,6 @@
 | Live voice smoke | npm run live:voice | At least two voice identities join and produce distinct per-user stream evidence; a missing pool is a defect, not a skip |
 
 The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when every listed command succeeds. Push happens once, only after this window passes.
+| Live pin and relay extraction | npm run live:alignment | Live Pages pin and four-relay default match repository constants; protocol diff has exactly the five reconciled changed files |
+| Alignment red check | npm run alignment:red-check | Stale development pin, missing live relay default and unresolved protocol difference each fail |
+| Config check | npm run config:check | Live default relays and ZELLOUS_RELAYS override both resolve correctly |

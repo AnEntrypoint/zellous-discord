@@ -153,7 +153,7 @@ export interface ProfileRecord {
 }
 
 export interface VoiceSignal {
-  signalType: "offer" | "answer" | "ice";
+  signalType: "offer" | "answer" | "ice" | "relay";
   sdp: string | null;
   iceCandidate: JsonValue | null;
   fromPubkey: string;
@@ -162,6 +162,14 @@ export interface VoiceSignal {
   dTag: string;
   pTag: string;
   rTag: string;
+  streamId: string | null;
+  src: string | null;
+  muteMs: number | null;
+  unmuteMs: number | null;
+  fragment: boolean;
+  clipSpliced: boolean;
+  relayed: boolean;
+  remoteKeys: string[];
 }
 
 export interface VoiceFrame {

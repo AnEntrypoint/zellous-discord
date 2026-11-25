@@ -8,7 +8,7 @@ DISCORD_VOICE_TOKENS is a comma-separated pool. Each token belongs to a distinct
 
 The control bot needs Gateway intents GUILDS, GUILD_MESSAGES, MESSAGE_CONTENT, GUILD_MESSAGE_REACTIONS, GUILD_MESSAGE_TYPING, GUILD_VOICE_STATES, GUILD_PRESENCES and GUILD_MEMBERS. Privileged intents must be enabled in the Developer Portal.
 
-The zellous side imports the pinned wireweave git commit 4508d66ff4cd3fde31959cc8b998810f367be321 with injected nostrTools, xstate, storage, ws and a Node WebRTC polyfill. Room hashes, Nostr kinds, tags, voice room IDs and relay defaults are recorded in docs/PROTOCOL.md and docs/RESEARCH.md.
+The zellous side imports the live GitHub Pages wireweave pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d with injected nostrTools, xstate, storage, ws and a Node WebRTC polyfill. It uses the live four-relay default with optional ZELLOUS_RELAYS override. Development pin 4508d66ff4cd3fde31959cc8b998810f367be321 is development context reconciled in docs/LIVE_PIN_DIFF.md. Room hashes, Nostr kinds, tags, voice room IDs and relay defaults are recorded in docs/PROTOCOL.md and docs/RESEARCH.md.
 
 Code has no comments. Put operating facts here and design rationale in docs.
 

@@ -23,7 +23,8 @@ export const VOICE_FIELDS = [
   "voiceId", "roomId", "discordUserId", "zellousPubkey", "direction", "identity", "workerId", "streamId", "ssrc",
   "speaking", "muted", "deafened", "connectionQuality", "leave", "signalType", "sdp", "iceCandidate", "fromPubkey",
   "toPubkey", "dTag", "pTag", "rTag", "opusPayload", "sequence", "timestamp", "sampleRate", "channels", "codec",
-  "marker", "action", "channel", "server", "ts", "rttScores", "capScores", "reflexive", "uplinkKbps"
+  "marker", "action", "channel", "server", "ts", "rttScores", "capScores", "reflexive", "uplinkKbps",
+  "relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys"
 ];
 
 export const ENVELOPE_FIELDS = [

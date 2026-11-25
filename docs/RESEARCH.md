@@ -6,7 +6,7 @@ Recorded on 2026-11-25. All facts were read again for Stage 1.
 
 The zellous app is a static browser application with no backend or account service. Identity is a Nostr keypair, relays and localStorage hold state, and the protocol implementation is wireweave loaded from a pinned CDN commit. Sources: /config/workspace/zellous/README.md lines 1 to 5 and 22 to 38, /config/workspace/zellous/AGENTS.md line 7, /config/workspace/zellous/docs/nostr-chat/index.html line 29.
 
-Pinned wireweave commit: 4508d66ff4cd3fde31959cc8b998810f367be321. CDN entry: https://cdn.jsdelivr.net/gh/AnEntrypoint/wireweave@4508d66ff4cd3fde31959cc8b998810f367be321/src/index.js
+Live GitHub Pages wireweave pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d. Live Pages entry: https://anentrypoint.github.io/zellous/nostr-chat/index.html. Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321. Development CDN entry: https://cdn.jsdelivr.net/gh/AnEntrypoint/wireweave@4508d66ff4cd3fde31959cc8b998810f367be321/src/index.js
 
 Room hash: SHA-256 of serverId plus colon plus channelId. Voice room id: zellous plus the first 16 hex characters of SHA-256 of serverId plus colon plus voice plus colon plus channel name. Sources: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/channel-hex.js and https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/voice-room-id.js
 
@@ -18,7 +18,7 @@ Chat messages are immutable kind 42 events with an e root tag equal to the chann
 
 Voice presence is replaceable kind 30078 with d tag zellous-voice:roomId plus action, channel and server tags. Content JSON carries action, name, channel, muted, ts, rttScores, capScores, reflexive and uplinkKbps. WebRTC signals are replaceable kind 30078 with d tag zellous-rtc:roomId:fromPubkey:toPubkey:type:sequence and p and r tags. Content JSON carries type and data for offer, answer and ice. Sources: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/voice.js lines 595 to 607 and 711 to 713 and 884 to 931.
 
-Default relays are wss://relay.primal.net, wss://nos.lol, wss://offchain.pub, wss://nostr-pub.wellorder.net, wss://relay.snort.social and wss://relay.damus.io. Source: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/relay-pool.js lines 5 to 10.
+The development pin relay-pool default was wss://relay.primal.net, wss://nos.lol, wss://offchain.pub, wss://nostr-pub.wellorder.net, wss://relay.snort.social and wss://relay.damus.io. The live GitHub Pages default chosen by the dispatcher is wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol and wss://relay.snort.social. ZELLOUS_RELAYS is the optional override; NOSTR_RELAYS is a compatibility alias. Sources: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/relay-pool.js lines 5 to 10 and https://anentrypoint.github.io/zellous/js/wireweave-bridge.js.
 
 ## Discord API and libraries
 
@@ -45,3 +45,9 @@ The pinned wireweave commit also documents npm installation from GitHub and Node
 Official Discord webhook documentation establishes per-execution username and avatar_url overrides, POST, PATCH and DELETE message endpoints, no bot user requirement, a global REST limit of 50 requests per second, and privileged intent bit encodings GUILD_MEMBERS 1 << 1, GUILD_PRESENCES 1 << 8 and MESSAGE_CONTENT 1 << 15. One bot token authenticates one bot user and a standard guild voice state is singular for guild_id and user_id. Gateway Opcode 4 has no user_id, so a second join in the same guild moves the same user and invalidates the previous voice session. N distinct simultaneous Discord voice participants therefore need N distinct bot tokens. Sources: https://docs.discord.com/developers/resources/webhook and https://docs.discord.com/developers/topics/voice-connections
 
 The owner direction names the credential DISCORD_VOICE_TOKENS. The exact shape is a comma-separated pool; every entry is a separate bot token for a separate bot user installed in guild 367741339393327104 with CONNECT and SPEAK. Excess speakers are queued when the pool is exhausted; mixing is never a substitute for distinct voice identities.
+
+## Live Pages alignment appended for Stage 5
+
+On 2026-11-25 the owner delegated all decisions to the dispatcher and stated that live zellous runs on GitHub Pages. The dispatcher read https://anentrypoint.github.io/zellous/ as the Pages URL, found wireweave pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d in the live nostr-chat import map, and found the live four-relay default in js/wireweave-bridge.js. The dispatcher chose this pin and relay set as the bridge source of truth with optional ZELLOUS_RELAYS override. No owner relay-set confirmation remains.
+
+A read-only control-token probe confirmed one bot user, three guilds including 367741339393327104 and application flags 0, with no token value printed. A POST /partner-sdk/token/bot probe returned HTTP 404 with Discord API code 10002, so Social SDK provisional accounts are unavailable and the dedicated DISCORD_VOICE_TOKENS pool remains required. GitHub tree comparison and protocol reconciliation are recorded in docs/LIVE_PIN_DIFF.md.

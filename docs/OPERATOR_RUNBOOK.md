@@ -24,9 +24,9 @@ The privileged intents are GUILD_MEMBERS, GUILD_PRESENCES and MESSAGE_CONTENT. T
 
 ## 4. Relay-set choice
 
-The default relay set is the pinned wireweave default encoded in NOSTR_RELAYS: wss://relay.primal.net,wss://nos.lol,wss://offchain.pub,wss://nostr-pub.wellorder.net,wss://relay.snort.social,wss://relay.damus.io.
+The dispatcher chose the live GitHub Pages default relay set as the source of truth: wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social. NOSTR_RELAYS carries this default. ZELLOUS_RELAYS is an optional comma-separated wss override. No owner relay-set confirmation remains.
 
-The owner must either confirm this default set or provide a replacement NOSTR_RELAYS value as a comma-separated list of wss URLs. The startup reconciliation publishes a signed kind 30078 channel snapshot to this set; live inventory reads it back. A relay set that rejects the snapshot or returns a stale inventory stops the final window.
+The startup reconciliation publishes a signed kind 30078 channel snapshot to the chosen set; live inventory reads it back. A relay set that rejects the snapshot or returns a stale inventory stops the final window.
 
 ## 5. Token redaction rules
 
@@ -36,10 +36,10 @@ The owner edits /config/workspace/zellous-discord/.env directly and keeps it at 
 
 ## 6. Why publication is held
 
-The final gated witness window zellous-discord-final-3 ended with ZDBRIDGE_DONE 1. Local witnesses passed, live reconciliation was accepted by four of six relays, and live inventory reported discordCount 21, zellousCount 21, no missing rooms and no mismatches. The window stopped at npm run live:voice with VOICE_POOL_INSUFFICIENT because DISCORD_VOICE_TOKENS has no entries in the owner .env.
+The final gated witness window zellous-discord-final-3 ended with ZDBRIDGE_DONE 1. Local witnesses passed, historical live reconciliation was accepted by four of six development relays, and live inventory reported discordCount 21, zellousCount 21, no missing rooms and no mismatches. The window stopped at npm run live:voice with VOICE_POOL_INSUFFICIENT because DISCORD_VOICE_TOKENS has no entries in the owner .env. Stage 5 later replaced the development pin and six-relay default with the live Pages pin and four-relay default.
 
 Per the spec red check, a missing token or failed check stops publication. There was no push, no pushed SHA, no git ls-remote origin main agreement and no DONE report. All commits remain local on main.
 
 ## 7. Dispatcher handoff
 
-After the owner supplies the pool, installs the bots, enables the privileged intents and confirms or replaces the relay set, the dispatcher resumes this peer. Rerun the final gated witness window on the new tree, fix only failures shown by that window, then push origin main once and quote the push output and git ls-remote origin main. Report DONE only when every done-section condition holds.
+After the owner supplies the pool, installs the bots and enables the privileged intents, the dispatcher resumes this peer. No relay-set confirmation is needed. Rerun the final gated witness window on the new tree, fix only failures shown by that window, then push origin main once and quote the push output and git ls-remote origin main. Report DONE only when every done-section condition holds.

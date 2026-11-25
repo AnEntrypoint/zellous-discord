@@ -1,0 +1,29 @@
+# LIVE_PIN_DIFF.md
+
+Live GitHub Pages source of truth: https://anentrypoint.github.io/zellous/
+
+Live wireweave pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d.
+Development wireweave pin: 4508d66ff4cd3fde31959cc8b998810f367be321.
+Both pins report wireweave version 0.3.64.
+
+The live Pages nostr-chat import map pins wireweave to 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d. The live Pages wireweave-bridge passes state.nostrRelays or the default set wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol, wss://relay.snort.social to createWireweave. The dispatcher chose this live pin and four-relay default as the bridge source of truth. ZELLOUS_RELAYS is an optional comma-separated override. NOSTR_RELAYS remains a compatibility alias. No owner relay-set confirmation remains.
+
+The Social SDK provisional-account endpoint POST /partner-sdk/token/bot returned HTTP 404 with Discord API code 10002 for this application. Provisional accounts are therefore unavailable, and the dedicated DISCORD_VOICE_TOKENS pool remains required. No mixed-voice fallback is permitted.
+
+GitHub tree comparison between the development pin and the live pin shows exactly five changed src files. No changes appear in channel-hex.js, channels.js, chat.js, reactions.js, presence.js, media.js, servers.js, relay-pool.js, dtag.js, wireweave.js or index.js. Therefore all room hashes, kind 34550 server metadata, kind 30078 channel snapshots, kind 42 messages, kind 5 deletions, kind 7 reactions, kind 0 profiles, kind 20042 typing, kind 30078 presence, d tag prefixes and p/r voice-signal tags remain identical.
+
+Voice signaling remains replaceable kind 30078. Presence still uses d tag zellous-voice:roomId with action, channel and server tags. Offer, answer and ice still use d tag zellous-rtc:roomId:fromPubkey:toPubkey:type:sequence with p and r tags and JSON content carrying type and data. The live pin adds a relay signal type through the same kind-30078 envelope with streamId and src in the data payload. It also adds relayed peer state and remoteKeys enumeration, and extends voice-thread segment metadata with muteMs and unmuteMs.
+
+## Reconciled changed files
+
+src/modules/voice-thread.js reconciled: hasVoiced became hasPlayable; hole holding and recheck scheduling were added; clip PCM splice handling now uses decodeClipPcm, ring.splice, clip-spliced events and segment muteMs and unmuteMs; taps now open remoteKeys when available; segment-received now reports from segment.from.
+
+src/vad/clip-filter.js reconciled: FRAGMENT_MIN_VOICED_MS is 100; applyThresholds and judgeClip accept a fragment option; fragment clips bypass the full voiced-ratio, energy, pitch and periodicity checks.
+
+src/vad/detector.js reconciled: assess accepts an options object and forwards it to judgeClip, enabling fragment assessment for outbound live-pin clips.
+
+src/voice-thread-audio.js reconciled: PcmRing gained follow-tail, hole-hold, hole-recheck, splice and alignment constants; frames carry digital-silence and timestamp fields; silentRuns, splice and decodeClipPcm support the live clip-splicing path.
+
+src/voice.js reconciled: peers and relayed are separate maps; remoteKeys and getRemoteStream cover relayed peers; outbound capture has release, start-delay and post-roll timing; segment metadata carries muteMs and unmuteMs; clipVad.assess receives fragment true; _broadcastSegment accepts exceptPk and the hub rebroadcasts relayed segments; a relay WebRTC signal carries streamId and src; setDeafened covers peers and relayed; SFU hub routing drops relayed peers on leave.
+
+The bridge contract now names relay, streamId, src, muteMs, unmuteMs, fragment, clipSpliced, relayed and remoteKeys in VOICE_FIELDS and VoiceSignal. The protocol diff red check fails if the GitHub tree introduces any other changed protocol file or if any changed file lacks its reconciled entry.

@@ -2,14 +2,16 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { LogLevel } from "./logger.js";
 
-export const DEFAULT_RELAYS = [
+export const LIVE_WIREWEAVE_PIN = "2e364df5f45b29e8f5cf6e747a0c2e9781352e0d";
+export const DEVELOPMENT_WIREWEAVE_PIN = "4508d66ff4cd3fde31959cc8b998810f367be321";
+export const LIVE_PAGES_URL = "https://anentrypoint.github.io/zellous/";
+export const LIVE_DEFAULT_RELAYS = [
+  "wss://relay.damus.io",
   "wss://relay.primal.net",
   "wss://nos.lol",
-  "wss://offchain.pub",
-  "wss://nostr-pub.wellorder.net",
-  "wss://relay.snort.social",
-  "wss://relay.damus.io"
+  "wss://relay.snort.social"
 ];
+export const DEFAULT_RELAYS = LIVE_DEFAULT_RELAYS;
 
 export class SecretString {
   private readonly value: string;
@@ -37,6 +39,7 @@ export interface Config {
   voiceTokens: SecretString[];
   voiceIdentityCapacity: number;
   nostrRelays: string[];
+  relaySource: string;
   zellousServerId: string;
   zellousServerDTag: string;
   zellousServerName: string;
@@ -54,7 +57,8 @@ const schema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_VOICE_TOKENS: z.string().default(""),
   DISCORD_GUILD_ID: z.string().regex(/^[0-9]{17,20}$/).default("367741339393327104"),
-  NOSTR_RELAYS: z.string().default(DEFAULT_RELAYS.join(",")),
+  NOSTR_RELAYS: z.string().default(LIVE_DEFAULT_RELAYS.join(",")),
+  ZELLOUS_RELAYS: z.string().default(""),
   ZELLOUS_SERVER_ID: z.string().default("auto"),
   ZELLOUS_SERVER_D_TAG: z.string().min(1).default("discord-367741339393327104"),
   ZELLOUS_SERVER_NAME: z.string().min(1).default("Discord Bridge"),
@@ -90,8 +94,17 @@ function isPlaceholder(value: string): boolean {
 
 function parseRelays(value: string): string[] {
   const relays = value.split(",").map((item) => item.trim()).filter(Boolean);
-  if (relays.length === 0 || relays.some((relay) => !relay.startsWith("wss://"))) throw new Error("NOSTR_RELAYS must be comma-separated wss URLs");
+  if (relays.length === 0 || relays.some((relay) => !relay.startsWith("wss://"))) throw new Error("Relay override must be comma-separated wss URLs");
   return relays;
+}
+
+function selectedRelays(parsed: { NOSTR_RELAYS: string; ZELLOUS_RELAYS: string }): { value: string; source: string } {
+  const live = LIVE_DEFAULT_RELAYS.join(",");
+  const override = parsed.ZELLOUS_RELAYS.trim();
+  if (override) return { value: override, source: "ZELLOUS_RELAYS" };
+  const legacy = parsed.NOSTR_RELAYS.trim();
+  if (legacy && legacy !== live) return { value: legacy, source: "NOSTR_RELAYS" };
+  return { value: live, source: "live-pages-default" };
 }
 
 function parseVoiceTokens(pool: string, environment: Record<string, string>): SecretString[] {
@@ -108,6 +121,7 @@ function parseVoiceTokens(pool: string, environment: Record<string, string>): Se
 export function loadConfig(environment: Record<string, string>): Config {
   const parsed = schema.parse(environment);
   const voiceTokens = parseVoiceTokens(parsed.DISCORD_VOICE_TOKENS, environment);
+  const relays = selectedRelays(parsed);
   if (isPlaceholder(parsed.DISCORD_TOKEN)) throw new Error("DISCORD_TOKEN must not be a placeholder");
   if (parsed.BRIDGE_PRIVATE_KEY_HEX && !/^[0-9a-fA-F]{64}$/.test(parsed.BRIDGE_PRIVATE_KEY_HEX)) throw new Error("BRIDGE_PRIVATE_KEY_HEX must be 64 hex characters");
   return {
@@ -115,7 +129,8 @@ export function loadConfig(environment: Record<string, string>): Config {
     discordGuildId: parsed.DISCORD_GUILD_ID,
     voiceTokens,
     voiceIdentityCapacity: voiceTokens.length,
-    nostrRelays: parseRelays(parsed.NOSTR_RELAYS),
+    nostrRelays: parseRelays(relays.value),
+    relaySource: relays.source,
     zellousServerId: parsed.ZELLOUS_SERVER_ID,
     zellousServerDTag: parsed.ZELLOUS_SERVER_D_TAG,
     zellousServerName: parsed.ZELLOUS_SERVER_NAME,
