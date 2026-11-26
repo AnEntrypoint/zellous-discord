@@ -23,3 +23,7 @@ Use npm run witness:suite for local witnesses. Live alignment commands are npm r
 ## References
 
 docs/PROTOCOL.md is the exact cross-system contract. docs/RESEARCH.md records the pinned source and live API facts. docs/SETUP.md and docs/DEPLOYMENT.md cover operation.
+
+## Live Discover owner key
+
+Set BRIDGE_PRIVATE_KEY_HEX in the ignored .env to the 64-hex private key matching npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42. Then run npm run discover:publish, npm run discover:query and a browser/Discover DOM witness. Tests use a throwaway key; no key value belongs in source or reports.

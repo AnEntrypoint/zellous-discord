@@ -26,3 +26,10 @@ The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when eve
 | New snapshot reconciliation | npm run snapshot:reconcile | Exact discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath; no destructive cleanup |
 | Snapshot startup red check | npm run snapshot:red-check | Expected relay snapshot event exists; read-only startup creates zero Discord channels; health is degraded; PID cleanup leaves no orphan |
 | Snapshot rollback | npm run snapshot:rollback | Previous snapshot content is republished as a newer replaceable event |
+
+| Discover unit bundle | npm run unit | Throwaway key produces four owner-signed events with correct d tags, text/rules channels and increasing timestamps |
+| Discover red check | npm run discover:red-check | Wrong pubkey listing, missing text/rules channel, missing metadata/listing/roles/channels and wrong server id fail |
+| Owner bundle publication | npm run discover:publish | Four event ids and relay acceptance are reported with owner hex 988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711 |
+| Relay event query | npm run discover:query | All four kinds exist on live relays with owner pubkey and increasing created_at |
+| Kind 42 chat | npm run chat:post | e root equals SHA-256(serverId + ":" + channelId) and relay acceptance is reported |
+| Live Discover DOM | browser assertion | Server card, joined channels and read/post chat are visible on live GitHub Pages |

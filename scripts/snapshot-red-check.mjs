@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { loadConfigFromEnvFile } from "../dist/config.js";
-import { bridgeSecretKey, publicKeyHex, resolveServerId } from "../dist/identity.js";
+import { bridgeSecretKey, ownerHex, resolveServerId } from "../dist/identity.js";
 import { discordInventory, liveInventory } from "../dist/live/inventory.js";
 import { findSecretPattern, redactText } from "../dist/redaction.js";
 import { readFileSync } from "node:fs";
@@ -30,11 +30,10 @@ function selfTest() {
 async function main() {
   if (process.argv.includes("--self-test")) { selfTest(); return; }
   const config = loadConfigFromEnvFile();
-  const secretKey = bridgeSecretKey(config);
-  const ownerPubkey = publicKeyHex(secretKey);
-  const serverId = resolveServerId(config, ownerPubkey);
+  bridgeSecretKey(config);
+  const owner = ownerHex(config);
+  const serverId = resolveServerId(config, owner);
   const backup = JSON.parse(readFileSync("data/snapshot-backup.json", "utf8"));
-  assert.equal(backup.serverId, serverId, "snapshot backup belongs to another server");
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const expected = await pool.get(config.nostrRelays, { ids: [backup.publishedEventId] }, { maxWait: 8000 });

@@ -51,6 +51,9 @@ export class SyncEngine {
     if (appended.duplicate) return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: true };
     const target = origin === "discord" ? this.zellous : this.discord;
     const translated = this.translateEvent(event, target.source);
+    if (process.env.ZDBRIDGE_READ_ONLY === "1" && target.source === "discord" && event.operation.startsWith("room.")) {
+      return { ok: true, sourceId: translated.sourceId, version: event.version, suppressed: true };
+    }
     let result: ApplyResult;
     try {
       result = await target.apply(translated);

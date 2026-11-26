@@ -1,15 +1,16 @@
 import { loadConfigFromEnvFile } from "./config.js";
-import { deriveSecretKey, loadOrCreateSeed, publicKeyHex, resolveServerId } from "./identity.js";
+import { ownerHex, requireOwnerKey, resolveServerId } from "./identity.js";
 import { liveInventory } from "./live/inventory.js";
+import { publishOwnerBundle } from "./live/discover.js";
 import { publishRoomSnapshot, rollbackRoomSnapshot } from "./live/reconcile.js";
+import { publishChatEvent } from "./live/chat.js";
 import { voiceSmoke } from "./live/voice.js";
 import { BridgeService } from "./service.js";
 
 function resolvedIdentity() {
   const config = loadConfigFromEnvFile();
-  const seed = loadOrCreateSeed(config.bridgeStateDir);
-  const bridgePublicKey = publicKeyHex(deriveSecretKey(seed, "bridge"));
-  return { config, bridgePublicKey, serverId: resolveServerId(config, bridgePublicKey) };
+  const owner = ownerHex(config);
+  return { config, owner, serverId: resolveServerId(config, owner) };
 }
 
 async function main(): Promise<void> {
@@ -39,9 +40,25 @@ async function main(): Promise<void> {
     if (!result.ok) process.exitCode = 1;
     return;
   }
+  if (command === "discover-publish") {
+    const { config, serverId } = resolvedIdentity();
+    const result = await publishOwnerBundle(config, serverId);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (command === "chat-post") {
+    const { config, serverId } = resolvedIdentity();
+    const channelId = process.argv[3] ?? "";
+    const content = process.argv.slice(4).join(" ");
+    const result = await publishChatEvent(config, serverId, channelId, content);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
   if (command === "inventory") {
-    const { config, bridgePublicKey, serverId } = resolvedIdentity();
-    const result = await liveInventory(config, serverId, bridgePublicKey);
+    const { config, serverId } = resolvedIdentity();
+    const result = await liveInventory(config, serverId);
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 1;
     return;

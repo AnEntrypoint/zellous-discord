@@ -2,7 +2,7 @@ import { createHmac, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getPublicKey } from "nostr-tools/pure";
-import type { Config } from "./config.js";
+import { OWNER_HEX, type Config } from "./config.js";
 
 export function loadOrCreateSeed(stateDir: string): Uint8Array {
   mkdirSync(stateDir, { recursive: true, mode: 0o700 });
@@ -29,8 +29,12 @@ export function publicKeyHex(secretKey: Uint8Array): string {
   return getPublicKey(secretKey);
 }
 
-export function resolveServerId(config: Config, bridgePublicKey: string): string {
-  return config.zellousServerId === "auto" ? bridgePublicKey + ":" + config.zellousServerDTag : config.zellousServerId;
+export function ownerHex(config: Config): string {
+  return config.zellousServerOwnerHex || OWNER_HEX;
+}
+
+export function resolveServerId(config: Config, owner = ownerHex(config)): string {
+  return config.zellousServerId === "auto" ? owner + ":" + config.zellousServerDTag : config.zellousServerId;
 }
 
 export function discordIdentityKey(userId: string): string {
@@ -46,4 +50,11 @@ export function bridgeSecretKey(config: Config): Uint8Array {
   const configuredKey = config.bridgePrivateKeyHex;
   if (configuredKey) return Uint8Array.from(Buffer.from(configuredKey.reveal(), "hex"));
   return deriveSecretKey(seed, "bridge");
+}
+
+export function requireOwnerKey(config: Config): Uint8Array {
+  if (!config.bridgePrivateKeyHex) throw new Error("owner private key missing: set BRIDGE_PRIVATE_KEY_HEX in .env");
+  const secretKey = bridgeSecretKey(config);
+  if (publicKeyHex(secretKey) !== ownerHex(config)) throw new Error("owner private key does not match ZELLOUS_SERVER_OWNER_HEX");
+  return secretKey;
 }

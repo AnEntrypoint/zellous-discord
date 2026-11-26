@@ -1,6 +1,7 @@
 import { SimplePool } from "nostr-tools";
 import { useWebSocketImplementation } from "nostr-tools/pool";
 import type { Config } from "../config.js";
+import { ownerHex } from "../identity.js";
 import { mapDiscordChannelToRoom, mapZellousChannelToRoom, type DiscordChannelLike, type ZellousChannelLike } from "../mappers.js";
 import { channelStateFilter, parseChannelState } from "../nostr.js";
 import type { RoomRecord } from "../types.js";
@@ -44,7 +45,8 @@ export async function discordInventory(config: Config): Promise<RoomRecord[]> {
   return channels.map((channel) => mapDiscordChannelToRoom(channel, config.zellousServerId, config.discordGuildId));
 }
 
-export async function nostrInventory(config: Config, serverId: string, ownerPubkey: string): Promise<RoomRecord[]> {
+export async function nostrInventory(config: Config, serverId: string): Promise<RoomRecord[]> {
+  const ownerPubkey = ownerHex(config);
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   try {
@@ -57,8 +59,8 @@ export async function nostrInventory(config: Config, serverId: string, ownerPubk
   }
 }
 
-export async function liveInventory(config: Config, serverId: string, ownerPubkey: string): Promise<InventoryComparison> {
+export async function liveInventory(config: Config, serverId: string): Promise<InventoryComparison> {
   const discordRooms = await discordInventory(config);
-  const zellousRooms = await nostrInventory(config, serverId, ownerPubkey);
+  const zellousRooms = await nostrInventory(config, serverId);
   return compareInventories(discordRooms, zellousRooms);
 }

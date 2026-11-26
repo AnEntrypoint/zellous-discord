@@ -4,7 +4,7 @@ import { SimplePool } from "nostr-tools";
 import { useWebSocketImplementation } from "nostr-tools/pool";
 import { finalizeEvent } from "nostr-tools/pure";
 import type { Config } from "../config.js";
-import { bridgeSecretKey, publicKeyHex } from "../identity.js";
+import { bridgeSecretKey, ownerHex, publicKeyHex } from "../identity.js";
 import { roomToZellousChannel } from "../mappers.js";
 import { channelStateContent, dtag, parseChannelState, replaceableTimestamp } from "../nostr.js";
 import { discordInventory } from "./inventory.js";
@@ -69,7 +69,8 @@ export async function publishRoomSnapshot(config: Config, serverId: string): Pro
   const channels = rooms.map(function(room) { return roomToZellousChannel(room); });
   const content = channelStateContent(channels, categories);
   const secretKey = bridgeSecretKey(config);
-  const ownerPubkey = publicKeyHex(secretKey);
+  const ownerPubkey = ownerHex(config);
+  if (publicKeyHex(secretKey) !== ownerPubkey) throw new Error("owner private key does not match ZELLOUS_SERVER_OWNER_HEX");
   const tags = [["d", dtag("channels", serverId)]];
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });

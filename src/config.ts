@@ -5,6 +5,9 @@ import type { LogLevel } from "./logger.js";
 export const LIVE_WIREWEAVE_PIN = "5d451241587181e471e263f44db993ba8e2d5764";
 export const DEVELOPMENT_WIREWEAVE_PIN = "4508d66ff4cd3fde31959cc8b998810f367be321";
 export const LIVE_PAGES_URL = "https://anentrypoint.github.io/zellous/";
+export const OWNER_NPUB = "npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42";
+export const OWNER_HEX = "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711";
+export const REQUIRED_SERVER_ID = OWNER_HEX + ":discord-367741339393327104";
 export const LIVE_DEFAULT_RELAYS = [
   "wss://relay.damus.io",
   "wss://relay.primal.net",
@@ -44,6 +47,7 @@ export interface Config {
   zellousServerId: string;
   zellousServerDTag: string;
   zellousServerName: string;
+  zellousServerOwnerHex: string;
   bridgeStateDir: string;
   bridgePrivateKeyHex: SecretString | null;
   logLevel: LogLevel;
@@ -64,6 +68,7 @@ const schema = z.object({
   ZELLOUS_SERVER_ID: z.string().default("auto"),
   ZELLOUS_SERVER_D_TAG: z.string().min(1).default("discord-367741339393327104"),
   ZELLOUS_SERVER_NAME: z.string().min(1).default("Discord Bridge"),
+  ZELLOUS_SERVER_OWNER_HEX: z.string().regex(/^[0-9a-f]{64}$/).default(OWNER_HEX),
   BRIDGE_STATE_DIR: z.string().min(1).default("./data"),
   BRIDGE_PRIVATE_KEY_HEX: z.string().default(""),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
@@ -137,6 +142,7 @@ export function loadConfig(environment: Record<string, string>): Config {
     zellousServerId: parsed.ZELLOUS_SERVER_ID,
     zellousServerDTag: parsed.ZELLOUS_SERVER_D_TAG,
     zellousServerName: parsed.ZELLOUS_SERVER_NAME,
+    zellousServerOwnerHex: parsed.ZELLOUS_SERVER_OWNER_HEX,
     bridgeStateDir: parsed.BRIDGE_STATE_DIR,
     bridgePrivateKeyHex: parsed.BRIDGE_PRIVATE_KEY_HEX ? new SecretString(parsed.BRIDGE_PRIVATE_KEY_HEX) : null,
     logLevel: parsed.LOG_LEVEL,

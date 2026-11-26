@@ -7,3 +7,5 @@ Before deployment, create .env from .env.example, set the control token and comm
 Health endpoints are /health, /ready and /metrics. /health reports status degraded plus degradedFeatures, privilegedIntentsEnabled, gatewayIntents, voiceTokenCount and voiceReflectionComplete; it never hides message-content, presence, member-list or voice-pool degradation. The service handles SIGTERM and SIGINT, stops the health server, unsubscribes both adapters, closes the relay pool and Discord client, and leaves the append-only ledger on disk. Restart replays the ledger, reconciles both inventories and re-establishes subscriptions.
 
 CI runs install, typecheck, unit tests, integration tests, secret scan, secret red check and build. Live inventory and live voice smoke are operator commands because they need real credentials and guild state.
+
+Stage 7 deployment needs BRIDGE_PRIVATE_KEY_HEX in .env for owner-signed Discover events. The private key must be mounted as a runtime secret, never baked into the image or logs.

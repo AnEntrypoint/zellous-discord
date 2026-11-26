@@ -19,6 +19,10 @@ export function degradedFeatures(config: Config): string[] {
   return features;
 }
 
+function messageChannelId(message: MessageRecord | undefined): string {
+  return String(message?.roomId ?? "").replace("room-", "");
+}
+
 function bridgeActor() {
   return { source: "discord" as Source, sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null };
 }
@@ -50,21 +54,25 @@ export class DiscordAdapter implements BridgeAdapter {
     const room = event.payload.room as RoomRecord | undefined;
     const message = event.payload.message as MessageRecord | undefined;
     if (event.operation === "room.create" || event.operation === "room.upsert") {
-      if (room) await discordRequest(this.config, "POST", "/guilds/" + this.config.discordGuildId + "/channels", roomToDiscordCreate(room));
+      if (room && process.env.ZDBRIDGE_READ_ONLY !== "1") {
+        const existing = (await discordRequest(this.config, "GET", "/guilds/" + this.config.discordGuildId + "/channels") as DiscordChannelLike[]).find(function(channel) { return channel.name === room.name; });
+        if (existing) await discordRequest(this.config, "PATCH", "/channels/" + existing.id, roomToDiscordPatch(room));
+        else await discordRequest(this.config, "POST", "/guilds/" + this.config.discordGuildId + "/channels", roomToDiscordCreate(room));
+      }
     } else if (event.operation.startsWith("room.")) {
       if (room && room.discordId) await discordRequest(this.config, "PATCH", "/channels/" + room.discordId, roomToDiscordPatch(room));
       if (event.operation === "room.delete" || event.operation === "room.tombstone") {
         if (room && room.discordId) await discordRequest(this.config, "DELETE", "/channels/" + room.discordId);
       }
     } else if (event.operation === "message.create" || event.operation === "message.correction" || event.operation === "message.attachment") {
-      if (message) await discordRequest(this.config, "POST", "/channels/" + String(message.roomId) + "/messages", mapMessageToDiscordPayload(message));
+      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message) + "/messages", mapMessageToDiscordPayload(message));
     } else if (event.operation === "message.reaction") {
       const reactions = message?.reactions ?? [];
       for (const reaction of reactions) await discordRequest(this.config, "PUT", "/channels/" + String(message?.roomId) + "/messages/" + reaction.messageId + "/reactions/" + encodeURIComponent(reaction.emoji) + "/@me");
     } else if (event.operation === "message.delete") {
-      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + String(message.roomId) + "/messages/" + message.discordId);
+      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + messageChannelId(message) + "/messages/" + message.discordId);
     } else if (event.operation === "message.typing") {
-      if (message) await discordRequest(this.config, "POST", "/channels/" + String(message.roomId) + "/typing");
+      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message) + "/typing");
     }
     return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: false };
   }

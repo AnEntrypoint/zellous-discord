@@ -55,3 +55,9 @@ What remains open: owner-supplied voice-token pool, final gated window label zel
 ## 9. Reversible new-snapshot reconciliation
 
 The 174 extra Discord channels from the earlier live-serve probe stay intact. No destructive cleanup is performed. npm run snapshot:reconcile reads all current Discord channels, publishes a signed kind 30078 snapshot containing all of them, records the previous snapshot content and event id in data/snapshot-backup.json, and reports discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath. npm run snapshot:rollback republishes the previous content as a newer replaceable event. npm run snapshot:red-check proves startup remains read-only and creates no Discord channels when the expected snapshot already exists.
+
+## 10. Stage 7 owner key decision
+
+Owner-signed metadata, Discover listing, roles, channel snapshot and kind 42 chat need BRIDGE_PRIVATE_KEY_HEX in .env. The owner must place the 64-hex key directly into .env; do not paste it into chat again. Because an nsec appeared in chat, treat it as exposed and decide whether to rotate it before use. Until then, discover:publish and owner-signed live interaction remain held; tests use a throwaway key.
+
+After the owner key is present: npm run discover:publish, npm run discover:query, npm run snapshot:reconcile, npm run snapshot:red-check and npm run serve:check prove owner-signed relays, exact counts, read-only startup and health. A browser/Discover DOM assertion must show the server card, joined channels and kind 42 chat before publication.

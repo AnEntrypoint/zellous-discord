@@ -9,7 +9,7 @@ import { degradedFeatures, DiscordAdapter, gatewayIntents } from "./adapters/dis
 import { NostrAdapter } from "./adapters/nostr.js";
 import { HealthServer } from "./health.js";
 import { Metrics } from "./observability.js";
-import { deriveSecretKey, loadOrCreateSeed, publicKeyHex, resolveServerId } from "./identity.js";
+import { ownerHex, resolveServerId } from "./identity.js";
 import type { BridgeAdapter } from "./types.js";
 import type { Config } from "./config.js";
 
@@ -29,9 +29,8 @@ export class BridgeService {
     this.config = config;
     if (!process.env.ZDBRIDGE_READ_ONLY) process.env.ZDBRIDGE_READ_ONLY = config.liveInventoryMode === "reconcile" ? "0" : "1";
     this.logger = new Logger(config.logLevel);
-    const seed = loadOrCreateSeed(config.bridgeStateDir);
-    const bridgePublicKey = publicKeyHex(deriveSecretKey(seed, "bridge"));
-    const serverId = resolveServerId(config, bridgePublicKey);
+    const owner = ownerHex(config);
+    const serverId = resolveServerId(config, owner);
     const resolvedConfig = { ...config, zellousServerId: serverId };
     this.ledger = new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl"));
     const mapping = new MappingStore(this.ledger);
@@ -50,7 +49,7 @@ export class BridgeService {
     const shutdown = () => { void this.stop(); };
     process.once("SIGTERM", shutdown);
     process.once("SIGINT", shutdown);
-    this.logger.info("bridge service started", { guildId: config.discordGuildId, serverId, mock: process.env.ZDBRIDGE_MOCK === "1" });
+    this.logger.info("bridge service started", { guildId: config.discordGuildId, serverId, owner, mock: process.env.ZDBRIDGE_MOCK === "1" });
   }
 
   async stop(): Promise<void> {
@@ -75,6 +74,8 @@ export class BridgeService {
     const features = this.config ? degradedFeatures(this.config) : ["uninitialized"];
     return {
       status: this.stopping ? "stopping" : features.length > 0 ? "degraded" : "ok",
+      ownerHex: this.config ? ownerHex(this.config) : null,
+      serverId: this.config ? resolveServerId(this.config) : null,
       privilegedIntentsEnabled: this.config?.privilegedIntentsEnabled ?? false,
       gatewayIntents: this.config ? gatewayIntents(this.config).map(String) : [],
       degradedFeatures: features,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const docs = ["docs/SPEC_ALIGNMENT.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "AGENTS.md"];
+const docs = ["docs/SPEC_ALIGNMENT.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "AGENTS.md", "README.md"];
 const texts = new Map(docs.map(function(file) { return [file, readFileSync(file, "utf8")]; }));
 const all = [...texts.values()].join(String.fromCharCode(10));
 const needles = [
@@ -13,7 +13,10 @@ const needles = [
   "reversible new-snapshot reconciliation",
   "destructive cleanup",
   "DISCORD_PRIVILEGED_INTENTS=false",
-  "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social"
+  "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
+  "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
+  "BRIDGE_PRIVATE_KEY_HEX",
+  "zellous-discover"
 ];
 
 function assertAlignment(text) {
@@ -25,6 +28,9 @@ function selfTest() {
   let threw = false;
   try { assertAlignment(all.split("174 extra Discord channels").join("unknown extra channels")); } catch { threw = true; }
   assert.ok(threw, "stale duplicate-channel fact did not fail");
+  threw = false;
+  try { assertAlignment(all.split("988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711").join("wrong-owner")); } catch { threw = true; }
+  assert.ok(threw, "wrong owner identity did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
 

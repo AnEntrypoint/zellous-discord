@@ -47,8 +47,11 @@ export class NostrAdapter implements BridgeAdapter {
     } else if (event.operation === "room.delete" || event.operation === "room.tombstone") {
       if (room?.zellousId) await this.ww.channels.remove(room.zellousId);
     } else if (event.operation === "message.create" || event.operation === "message.correction") {
-      const message = event.payload.message as { content?: string } | undefined;
-      if (message?.content) await this.ww.chat.send(message.content);
+      const message = event.payload.message as { content?: string; roomId?: string; zellousEventId?: string } | undefined;
+      if (message?.content) {
+        const channelId = String(message.roomId ?? message.zellousEventId ?? "").replace("room-", "");
+        await this.ww.chat.sendTo(this.serverId, channelId, message.content);
+      }
     } else if (event.operation === "message.delete") {
       const message = event.payload.message as { zellousEventId?: string } | undefined;
       if (message?.zellousEventId) await this.ww.chat.deleteMessage(message.zellousEventId);

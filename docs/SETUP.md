@@ -12,3 +12,7 @@ The service generates its own persistent Nostr identity and writes it to the ign
 If DISCORD_VOICE_TOKENS has fewer than two entries, per-user voice reflection is degraded and live voice smoke fails with VOICE_POOL_INSUFFICIENT. This is an owner credential gap, not a skipped check. Mixed audio is never used as a substitute. /health reports voiceReflectionComplete false and per-user-voice-reflection in degradedFeatures.
 
 Read docs/OPERATOR_RUNBOOK.md before supplying credentials or resuming the final window. It states the exact DISCORD_VOICE_TOKENS shape, privileged intents, per-bot permissions, chosen live relay default, optional ZELLOUS_RELAYS override, token redaction rules and the reason publication is held.
+
+## Owner key for live Discover
+
+Place the matching 64-hex private key for npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42 directly into the ignored .env as BRIDGE_PRIVATE_KEY_HEX. ZELLOUS_SERVER_OWNER_HEX is already set to 988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711. Then run npm run discover:publish and npm run discover:query. Tests use a generated throwaway key and never print it. Because the owner nsec appeared in chat, rotate it if it is a production key.
