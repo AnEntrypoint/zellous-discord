@@ -19,3 +19,5 @@ Local commits are made as lanmower with no trailers. Phase A records every chang
 The spec recorded live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, but a fresh live Pages read on 2026-11-26 resolved to 5d451241587181e471e263f44db993ba8e2d5764. Runtime follows the current live Pages artifact; docs/LIVE_PIN_DIFF.md records the drift and the done-section publication hold.
 
 Startup reconciliation is read-only by default via LIVE_INVENTORY_MODE=read-only and ZDBRIDGE_READ_ONLY=1. Set LIVE_INVENTORY_MODE=reconcile only when external channel writes are intended; the first live serve probe showed that an empty mapping ledger plus two populated inventories can otherwise create duplicate Discord channels.
+
+The 174 extra Discord channels from the earlier live-serve probe remain intact. Reversible new-snapshot reconciliation is relay-only: it publishes all current Discord channels as a signed kind 30078 snapshot, records the previous snapshot in data/snapshot-backup.json, and supports rollback. No destructive channel cleanup is performed.

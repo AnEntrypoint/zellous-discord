@@ -55,3 +55,7 @@ A read-only control-token probe confirmed one bot user, three guilds including 3
 ## Live Pages pin drift on 2026-11-26
 
 A fresh read of https://anentrypoint.github.io/zellous/nostr-chat/index.html with a cache-busting query resolved wireweave pin 5d451241587181e471e263f44db993ba8e2d5764. The four-relay default in js/wireweave-bridge.js remained wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol and wss://relay.snort.social. GitHub tree comparison against development pin 4508d66ff4cd3fde31959cc8b998810f367be321 changed exactly src/hub-liveness.js, src/modules/voice-thread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js. docs/LIVE_PIN_DIFF.md records the reconciliation. The spec done section still names the earlier live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, so publication remains held.
+
+## Spec alignment on 2026-11-26
+
+The dispatcher updated the facts checked, architecture and done sections: live GitHub Pages serves wireweave pin 5d451241587181e471e263f44db993ba8e2d5764, the earlier pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d is historical, the six-file protocol drift is in docs/LIVE_PIN_DIFF.md, and the 174 extra Discord channels from the earlier probe stay intact. No destructive cleanup is performed. The chosen reversible new-snapshot reconciliation publishes a new relay snapshot containing all current Discord channels and records rollback state in data/snapshot-backup.json. docs/SPEC_ALIGNMENT.md is the repository mapping of those spec changes.

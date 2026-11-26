@@ -52,6 +52,6 @@ What is explicitly degraded: message-content enrichment, presence enrichment, me
 
 What remains open: owner-supplied voice-token pool, final gated window label zellous-discord-final-4 on tree 8889615 with GATE_TREE=8889615, one push, git ls-remote origin main agreement and DONE. Do not poll for these; the dispatcher resumes when the owner-supplied fact changes.
 
-## 9. Open live-inventory cleanup
+## 9. Reversible new-snapshot reconciliation
 
-An earlier live serve probe wrote duplicate Discord channels before read-only startup reconciliation was added. The current guild must be cleaned or a new channel snapshot must be chosen before live inventory can report exact 1:1 counts again. No channel deletion was performed because that is destructive outward cleanup. The dispatcher or owner must decide which duplicate Discord channels to remove or whether to publish a new snapshot.
+The 174 extra Discord channels from the earlier live-serve probe stay intact. No destructive cleanup is performed. npm run snapshot:reconcile reads all current Discord channels, publishes a signed kind 30078 snapshot containing all of them, records the previous snapshot content and event id in data/snapshot-backup.json, and reports discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath. npm run snapshot:rollback republishes the previous content as a newer replaceable event. npm run snapshot:red-check proves startup remains read-only and creates no Discord channels when the expected snapshot already exists.

@@ -1,7 +1,7 @@
 import { loadConfigFromEnvFile } from "./config.js";
 import { deriveSecretKey, loadOrCreateSeed, publicKeyHex, resolveServerId } from "./identity.js";
 import { liveInventory } from "./live/inventory.js";
-import { publishRoomSnapshot } from "./live/reconcile.js";
+import { publishRoomSnapshot, rollbackRoomSnapshot } from "./live/reconcile.js";
 import { voiceSmoke } from "./live/voice.js";
 import { BridgeService } from "./service.js";
 
@@ -25,9 +25,16 @@ async function main(): Promise<void> {
     console.log(JSON.stringify(await response.json()));
     return;
   }
-  if (command === "reconcile") {
+  if (command === "reconcile" || command === "snapshot-reconcile") {
     const { config, serverId } = resolvedIdentity();
     const result = await publishRoomSnapshot(config, serverId);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (command === "snapshot-rollback") {
+    const { config } = resolvedIdentity();
+    const result = await rollbackRoomSnapshot(config);
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 1;
     return;

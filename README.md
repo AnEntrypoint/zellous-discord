@@ -18,7 +18,7 @@ Copy .env.example to .env and fill DISCORD_TOKEN, DISCORD_VOICE_TOKENS, the guil
 
 ## Verification
 
-Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; opt-in switch checks are npm run intent:guard, npm run intent:red-check and npm run serve:check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
+Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; spec and snapshot checks are npm run spec:alignment, npm run spec:red-check, npm run snapshot:reconcile and npm run snapshot:red-check; opt-in switch checks are npm run intent:guard, npm run intent:red-check and npm run serve:check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
 
 ## References
 

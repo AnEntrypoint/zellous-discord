@@ -21,3 +21,8 @@ The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when eve
 | Opt-in intent guard | npm run intent:guard | Default Gateway identify omits MESSAGE_CONTENT, GUILD_PRESENCES and GUILD_MEMBERS; opt-in includes them; degraded features are explicit |
 | Intent red check | npm run intent:red-check | Disallowed-intent inclusion, hidden degradation and complete voice reflection without a pool each fail |
 | Live serve health | npm run serve:check | Control-plane service starts with existing token, answers /health as degraded, lists degraded features, exposes no token and stops by PID |
+| Spec alignment | npm run spec:alignment | Current pin, historical pin, six-file drift, 174 extra channels, reversible snapshot and opt-in intents are recorded in the contract |
+| Spec red check | npm run spec:red-check | A stale fact fails |
+| New snapshot reconciliation | npm run snapshot:reconcile | Exact discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath; no destructive cleanup |
+| Snapshot startup red check | npm run snapshot:red-check | Expected snapshot exists; read-only startup creates zero Discord channels; health is degraded; PID cleanup leaves no orphan |
+| Snapshot rollback | npm run snapshot:rollback | Previous snapshot content is republished as a newer replaceable event |

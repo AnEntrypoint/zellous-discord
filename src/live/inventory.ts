@@ -15,7 +15,7 @@ export interface InventoryComparison {
 }
 
 function roomKey(room: RoomRecord): string {
-  return [room.type, room.name, String(room.position), room.parentId ?? "", room.topic ?? ""].join("|");
+  return [room.type, room.name, String(room.position), room.parentId ?? "", room.topic ?? "", room.discordId ?? room.zellousId ?? ""].join("|");
 }
 
 export function compareInventories(discordRooms: RoomRecord[], zellousRooms: RoomRecord[]): InventoryComparison {
