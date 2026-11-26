@@ -6,6 +6,7 @@ import WebSocket from "ws";
 import { createEmptyRegister, installPolyfill } from "werift/polyfill";
 import { createWireweave } from "wireweave/wireweave";
 import type { Config } from "./config.js";
+import { bridgeSecretKey } from "./identity.js";
 
 class NodeMediaStreamTrack {
   enabled = true;
@@ -99,7 +100,8 @@ export function createNodeWireweave(config: Config): any {
     WebSocketImpl: WebSocket,
     mediaDevices: (globalThis as unknown as { navigator: { mediaDevices: unknown } }).navigator.mediaDevices
   });
-  if (!ww.auth.loadFromStorage()) ww.auth.generateKey();
+  const secretKey = bridgeSecretKey(config);
+  ww.auth.importKey(Buffer.from(secretKey).toString("hex"));
   ww.pool.connect();
   ww.servers.init();
   return ww;

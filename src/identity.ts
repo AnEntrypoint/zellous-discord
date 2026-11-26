@@ -40,3 +40,10 @@ export function discordIdentityKey(userId: string): string {
 export function zellousIdentityKey(pubkey: string): string {
   return "zellous:" + pubkey;
 }
+
+export function bridgeSecretKey(config: Config): Uint8Array {
+  const seed = loadOrCreateSeed(config.bridgeStateDir);
+  const configuredKey = config.bridgePrivateKeyHex;
+  if (configuredKey) return Uint8Array.from(Buffer.from(configuredKey.reveal(), "hex"));
+  return deriveSecretKey(seed, "bridge");
+}
