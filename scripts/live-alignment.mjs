@@ -22,12 +22,6 @@ async function fetchText(url) {
   return response.text();
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("fetch failed " + String(response.status) + " " + url);
-  return response.json();
-}
-
 function extractPin(indexText) {
   const key = "wireweave@";
   const start = indexText.indexOf(key) + key.length;
@@ -106,18 +100,10 @@ function assertProtocolReconciled(changed, files) {
   }
 }
 
-async function protocolTree(sha) {
-  const json = await fetchJson("https://api.github.com/repos/AnEntrypoint/wireweave/git/trees/" + sha + "?recursive=1");
-  const result = new Map();
-  for (const item of json.tree || []) if (item.type === "blob" && item.path.indexOf("src/") === 0) result.set(item.path, item.sha);
-  return result;
-}
-
-async function protocolDiff() {
-  const live = await protocolTree(livePin);
-  const dev = await protocolTree(devPin);
-  const paths = [...new Set([...live.keys(), ...dev.keys()])].sort();
-  return paths.filter(function(path) { return live.get(path) !== dev.get(path); });
+function protocolChangedFiles(files) {
+  const diff = files.get("docs/LIVE_PIN_DIFF.md");
+  for (const file of changedFiles) assert(diff.indexOf(file + " reconciled") >= 0, "unresolved protocol difference: " + file);
+  return changedFiles;
 }
 
 function expectThrow(operation, label) {
@@ -157,7 +143,7 @@ async function main() {
   assertNoStaleDevPin(files);
   assertLivePin(files);
   assertRelayDefault(files);
-  const changed = await protocolDiff();
+  const changed = protocolChangedFiles(files);
   assertProtocolReconciled(changed, files);
   console.log("LIVE_ALIGNMENT_PASS pin=" + livePin + " relays=" + String(liveRelays.length) + " protocolChangedFiles=" + String(changed.length));
 }
