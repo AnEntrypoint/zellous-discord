@@ -14,9 +14,19 @@ test("typed config loads the comma-separated voice token pool", () => {
   assert.equal(config.voiceIdentityCapacity, 2);
   assert.deepEqual(config.nostrRelays, LIVE_DEFAULT_RELAYS);
   assert.equal(config.relaySource, "live-pages-default");
+  assert.equal(config.privilegedIntentsEnabled, false);
   assert.equal(String(config.discordToken), "[REDACTED]");
   assert.equal(JSON.stringify({ token: config.discordToken }), JSON.stringify({ token: "[REDACTED]" }));
   assert.equal(new SecretString("value").reveal(), "value");
+});
+
+test("privileged intents are opt-in", () => {
+  const enabled = loadConfig({
+    DISCORD_TOKEN: "control-token",
+    DISCORD_GUILD_ID: "367741339393327104",
+    DISCORD_PRIVILEGED_INTENTS: "true"
+  });
+  assert.equal(enabled.privilegedIntentsEnabled, true);
 });
 
 test("ZELLOUS_RELAYS overrides the live Pages default", () => {
