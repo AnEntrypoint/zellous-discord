@@ -15,8 +15,13 @@ export interface InventoryComparison {
   mismatches: string[];
 }
 
+function sourceId(room: RoomRecord): string {
+  const id = room.discordId ?? room.zellousId ?? "";
+  return id.startsWith("room-") ? id.slice(5) : id;
+}
+
 function roomKey(room: RoomRecord): string {
-  return [room.type, room.name, String(room.position), room.parentId ?? "", room.topic ?? "", room.discordId ?? room.zellousId ?? ""].join("|");
+  return [room.type, room.name, String(room.position), room.parentId ?? "", room.topic ?? "", sourceId(room)].join("|");
 }
 
 export function compareInventories(discordRooms: RoomRecord[], zellousRooms: RoomRecord[]): InventoryComparison {
