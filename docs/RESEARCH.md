@@ -6,7 +6,7 @@ Recorded on 2026-11-25. All facts were read again for Stage 1.
 
 The zellous app is a static browser application with no backend or account service. Identity is a Nostr keypair, relays and localStorage hold state, and the protocol implementation is wireweave loaded from a pinned CDN commit. Sources: /config/workspace/zellous/README.md lines 1 to 5 and 22 to 38, /config/workspace/zellous/AGENTS.md line 7, /config/workspace/zellous/docs/nostr-chat/index.html line 29.
 
-Live GitHub Pages wireweave pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d. Live Pages entry: https://anentrypoint.github.io/zellous/nostr-chat/index.html. Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321. Development CDN entry: https://cdn.jsdelivr.net/gh/AnEntrypoint/wireweave@4508d66ff4cd3fde31959cc8b998810f367be321/src/index.js
+Live GitHub Pages wireweave pin: 5d451241587181e471e263f44db993ba8e2d5764. Live Pages entry: https://anentrypoint.github.io/zellous/nostr-chat/index.html. Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321. Development CDN entry: https://cdn.jsdelivr.net/gh/AnEntrypoint/wireweave@4508d66ff4cd3fde31959cc8b998810f367be321/src/index.js
 
 Room hash: SHA-256 of serverId plus colon plus channelId. Voice room id: zellous plus the first 16 hex characters of SHA-256 of serverId plus colon plus voice plus colon plus channel name. Sources: https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/channel-hex.js and https://github.com/AnEntrypoint/wireweave/blob/4508d66ff4cd3fde31959cc8b998810f367be321/src/voice-room-id.js
 
@@ -48,6 +48,10 @@ The owner direction names the credential DISCORD_VOICE_TOKENS. The exact shape i
 
 ## Live Pages alignment appended for Stage 5
 
-On 2026-11-25 the owner delegated all decisions to the dispatcher and stated that live zellous runs on GitHub Pages. The dispatcher read https://anentrypoint.github.io/zellous/ as the Pages URL, found wireweave pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d in the live nostr-chat import map, and found the live four-relay default in js/wireweave-bridge.js. The dispatcher chose this pin and relay set as the bridge source of truth with optional ZELLOUS_RELAYS override. No owner relay-set confirmation remains.
+On 2026-11-25 the owner delegated all decisions to the dispatcher and stated that live zellous runs on GitHub Pages. The dispatcher read https://anentrypoint.github.io/zellous/ as the Pages URL, found wireweave pin 5d451241587181e471e263f44db993ba8e2d5764 in the live nostr-chat import map, and found the live four-relay default in js/wireweave-bridge.js. The dispatcher chose this pin and relay set as the bridge source of truth with optional ZELLOUS_RELAYS override. No owner relay-set confirmation remains.
 
 A read-only control-token probe confirmed one bot user, three guilds including 367741339393327104 and application flags 0, with no token value printed. A POST /partner-sdk/token/bot probe returned HTTP 404 with Discord API code 10002, so Social SDK provisional accounts are unavailable and the dedicated DISCORD_VOICE_TOKENS pool remains required. GitHub tree comparison and protocol reconciliation are recorded in docs/LIVE_PIN_DIFF.md.
+
+## Live Pages pin drift on 2026-11-26
+
+A fresh read of https://anentrypoint.github.io/zellous/nostr-chat/index.html with a cache-busting query resolved wireweave pin 5d451241587181e471e263f44db993ba8e2d5764. The four-relay default in js/wireweave-bridge.js remained wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol and wss://relay.snort.social. GitHub tree comparison against development pin 4508d66ff4cd3fde31959cc8b998810f367be321 changed exactly src/hub-liveness.js, src/modules/voice-thread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js. docs/LIVE_PIN_DIFF.md records the reconciliation. The spec done section still names the earlier live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, so publication remains held.

@@ -18,3 +18,6 @@ The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when eve
 | Live pin and relay extraction | npm run live:alignment | Live Pages pin and four-relay default match repository constants; protocol diff has exactly the five reconciled changed files |
 | Alignment red check | npm run alignment:red-check | Stale development pin, missing live relay default and unresolved protocol difference each fail |
 | Config check | npm run config:check | Live default relays and ZELLOUS_RELAYS override both resolve correctly |
+| Opt-in intent guard | npm run intent:guard | Default Gateway identify omits MESSAGE_CONTENT, GUILD_PRESENCES and GUILD_MEMBERS; opt-in includes them; degraded features are explicit |
+| Intent red check | npm run intent:red-check | Disallowed-intent inclusion, hidden degradation and complete voice reflection without a pool each fail |
+| Live serve health | npm run serve:check | Control-plane service starts with existing token, answers /health as degraded, lists degraded features, exposes no token and stops by PID |

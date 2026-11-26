@@ -26,4 +26,24 @@ The final gated window zellous-discord-final-3 ended ZDBRIDGE_DONE 1 because npm
 
 ## 2026-11-25: Stage 5 live Pages alignment
 
-The bridge now imports the live GitHub Pages wireweave pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, uses the live four-relay default wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social, and supports optional ZELLOUS_RELAYS override. NOSTR_RELAYS remains a compatibility alias. The protocol contract records the five changed live-pin files and the added relay, streamId, src, muteMs, unmuteMs, fragment, clipSpliced, relayed and remoteKeys fields. The dispatcher chose the live values; no owner relay-set confirmation remains. The Social SDK provisional-account endpoint is unavailable, so DISCORD_VOICE_TOKENS remains required. Publication is still held only for owner voice tokens; no final window rerun or push occurred in Stage 5.
+The bridge now imports the live GitHub Pages wireweave pin 5d451241587181e471e263f44db993ba8e2d5764, uses the live four-relay default wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social, and supports optional ZELLOUS_RELAYS override. NOSTR_RELAYS remains a compatibility alias. The protocol contract records the five changed live-pin files and the added relay, streamId, src, muteMs, unmuteMs, fragment, clipSpliced, relayed and remoteKeys fields. The dispatcher chose the live values; no owner relay-set confirmation remains. The Social SDK provisional-account endpoint is unavailable, so DISCORD_VOICE_TOKENS remains required. Publication is still held only for owner voice tokens; no final window rerun or push occurred in Stage 5.
+
+## 2026-11-26: Stage 6 control-plane run with opt-in privileged intents
+
+The control-plane bridge now connects with the existing .env token and guild 367741339393327104. DISCORD_PRIVILEGED_INTENTS defaults to false, so Gateway identify uses only GUILDS, GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_MESSAGE_TYPING and GUILD_VOICE_STATES. Message content, presence and member-list enrichment are explicitly degraded until the owner enables those privileged intents and opts in.
+
+Per-user voice reflection remains degraded because DISCORD_VOICE_TOKENS has no entries. /health reports status degraded, degradedFeatures, privilegedIntentsEnabled, gatewayIntents, voiceTokenCount and voiceReflectionComplete=false. No mixed-voice fallback is claimed. Live GitHub Pages remains the runtime source of truth with pin 5d451241587181e471e263f44db993ba8e2d5764 and the four-relay default.
+
+Narrow witnesses cover config:check, live:inventory, serve plus /health, unit/typecheck, secret scan, intent:guard, intent:red-check and serve:check. No final gated window or push ran because the voice-token pool and done section are still outstanding.
+
+## 2026-11-26: Live Pages pin drift and owner identity fix
+
+The live GitHub Pages artifact moved from the spec-recorded pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d to 5d451241587181e471e263f44db993ba8e2d5764. Runtime now follows the current live Pages pin and four-relay default. docs/LIVE_PIN_DIFF.md records the six-file protocol diff, including hub-liveness heartbeats, relays maps, hub claims, uplinkClass, SFU route state and unmuteMs clip splicing.
+
+The Nostr adapter now imports the bridge-derived private key into wireweave auth, loads the derived server channel set and switches to that server before subscribing, which fixes the owner-only channel-create crash observed during the first live serve probe. Initial Discord Gateway channel events are suppressed until ClientReady; startup reconciliation remains the source for the initial room inventory.
+
+## 2026-11-26: Read-only startup reconciliation guard
+
+The first live serve probes exposed an idempotency defect: startup reconciliation saw two already-populated inventories with an empty local mapping ledger and applied creates to both sides, which created duplicate Discord channels and triggered wireweave rename conflicts. The engine now matches existing rooms by type, name, position, parent and topic before any create, and ZDBRIDGE_READ_ONLY=1 makes startup reconciliation map-only. All wireweave channel and chat operations in the Nostr adapter are awaited so their rejections are caught instead of becoming unhandled process crashes. serve:check uses read-only startup reconciliation.
+
+The live guild currently has more Discord channels than the last published zellous channel snapshot because of that earlier startup write. No further destructive cleanup or channel deletion was performed; the duplicates and the exact 1:1 live inventory remain open until the owner or dispatcher authorizes cleanup or a new snapshot.
