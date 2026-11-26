@@ -5,7 +5,7 @@ import { useWebSocketImplementation } from "nostr-tools/pool";
 import { finalizeEvent } from "nostr-tools/pure";
 import type { Config } from "../config.js";
 import { bridgeSecretKey, ownerHex, publicKeyHex } from "../identity.js";
-import { roomToZellousChannel } from "../mappers.js";
+import { ownerChannels } from "./discover.js";
 import { channelStateContent, dtag, parseChannelState, replaceableTimestamp } from "../nostr.js";
 import { discordInventory } from "./inventory.js";
 import type { RoomRecord } from "../types.js";
@@ -66,7 +66,7 @@ export async function publishRoomSnapshot(config: Config, serverId: string): Pro
   const rooms = await discordInventory(config);
   const duplicates = duplicateNames(rooms);
   const categories = rooms.filter(function(room) { return room.type === "category"; }).map(function(room) { return { id: room.discordId ?? room.roomId, name: room.name, position: room.position }; });
-  const channels = rooms.map(function(room) { return roomToZellousChannel(room); });
+  const channels = ownerChannels(rooms);
   const content = channelStateContent(channels, categories);
   const secretKey = bridgeSecretKey(config);
   const ownerPubkey = ownerHex(config);

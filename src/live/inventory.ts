@@ -20,8 +20,10 @@ function roomKey(room: RoomRecord): string {
 }
 
 export function compareInventories(discordRooms: RoomRecord[], zellousRooms: RoomRecord[]): InventoryComparison {
+  const rulesPages = zellousRooms.filter((room) => room.type === "page" && room.zellousId === "rules");
+  const comparableZellous = zellousRooms.filter((room) => !(room.type === "page" && room.zellousId === "rules"));
   const discordKeys = new Map(discordRooms.map((room) => [roomKey(room), room]));
-  const zellousKeys = new Map(zellousRooms.map((room) => [roomKey(room), room]));
+  const zellousKeys = new Map(comparableZellous.map((room) => [roomKey(room), room]));
   const missingInZellous = [...discordKeys.keys()].filter((key) => !zellousKeys.has(key));
   const missingInDiscord = [...zellousKeys.keys()].filter((key) => !discordKeys.has(key));
   const mismatches: string[] = [];
@@ -30,8 +32,9 @@ export function compareInventories(discordRooms: RoomRecord[], zellousRooms: Roo
     if (!zellousRoom) continue;
     if (discordRoom.type !== zellousRoom.type || discordRoom.name !== zellousRoom.name || discordRoom.position !== zellousRoom.position) mismatches.push(key);
   }
-  const countsMatch = discordRooms.length === zellousRooms.length;
-  if (!countsMatch) mismatches.push("room-count:" + String(discordRooms.length) + "!=" + String(zellousRooms.length));
+  const countsMatch = discordRooms.length === comparableZellous.length;
+  if (!countsMatch) mismatches.push("room-count:" + String(discordRooms.length) + "!=" + String(comparableZellous.length));
+  if (rulesPages.length === 0) mismatches.push("rules-page-missing");
   return { ok: countsMatch && missingInZellous.length === 0 && missingInDiscord.length === 0 && mismatches.length === 0, discordCount: discordRooms.length, zellousCount: zellousRooms.length, missingInZellous, missingInDiscord, mismatches };
 }
 
