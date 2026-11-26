@@ -75,7 +75,8 @@ const roomTypeToDiscordType: Record<RoomType, number> = {
   forum: 15,
   thread: 11,
   stage: 13,
-  voice: 2
+  voice: 2,
+  page: 0
 };
 
 export const ALL_ROOM_TYPES: RoomType[] = ["category", "text", "announcement", "forum", "thread", "stage", "voice"];

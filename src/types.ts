@@ -1,5 +1,5 @@
 export type Source = "discord" | "zellous" | "bridge"
-export type RoomType = "category" | "text" | "announcement" | "forum" | "thread" | "stage" | "voice"
+export type RoomType = "category" | "text" | "announcement" | "forum" | "thread" | "stage" | "voice" | "page"
 export type Operation =
   | "room.create"
   | "room.rename"
