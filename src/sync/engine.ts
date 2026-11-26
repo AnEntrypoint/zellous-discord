@@ -5,6 +5,10 @@ import type { Logger } from "../logger.js";
 import { SuppressionStore } from "./suppression.js";
 import type { ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, Operation, ReconcileResult, RoomRecord, Source } from "../types.js";
 
+function roomKey(room: RoomRecord): string {
+  return [room.type, room.name, String(room.position), room.parentId ?? "", room.topic ?? ""].join("|");
+}
+
 function bridgeActor(source: Source) {
   return { source, sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null };
 }
@@ -47,7 +51,13 @@ export class SyncEngine {
     if (appended.duplicate) return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: true };
     const target = origin === "discord" ? this.zellous : this.discord;
     const translated = this.translateEvent(event, target.source);
-    const result = await target.apply(translated);
+    let result: ApplyResult;
+    try {
+      result = await target.apply(translated);
+    } catch (error) {
+      this.logger.error("target apply degraded", { operation: event.operation, target: target.source, message: error instanceof Error ? error.message : String(error) });
+      result = { ok: false, sourceId: translated.sourceId, version: event.version, suppressed: false };
+    }
     this.suppression.suppress(event.eventId, target.source, translated.sourceId);
     const room = translated.payload.room as RoomRecord | undefined;
     if (room) this.mapping.upsertRoom(room, "bridge");
@@ -69,43 +79,62 @@ export class SyncEngine {
 
   async reconcile(): Promise<ReconcileResult> {
     const result: ReconcileResult = { roomsCreated: 0, roomsUpdated: 0, roomsTombstoned: 0, messagesCreated: 0, messagesUpdated: 0, duplicatesSuppressed: 0 };
+    const readOnly = process.env.ZDBRIDGE_READ_ONLY === "1";
     const discord = await this.discord.snapshot();
     const zellous = await this.zellous.snapshot();
+    const discordByKey = new Map(discord.rooms.map((room) => [roomKey(room), room]));
+    const zellousByKey = new Map(zellous.rooms.map((room) => [roomKey(room), room]));
     for (const room of discord.rooms) {
-      if (!room.discordId || this.mapping.getRoomByDiscordId(room.discordId)) continue;
+      if (!room.discordId) continue;
+      const matched = zellousByKey.get(roomKey(room));
+      if (matched) {
+        const bridged = { ...room, roomId: "room-" + room.discordId, zellousId: matched.zellousId, contentVersion: Math.max(room.contentVersion, matched.contentVersion, 1) };
+        this.mapping.upsertRoom(bridged, "bridge");
+        continue;
+      }
+      if (this.mapping.getRoomByDiscordId(room.discordId)) continue;
       const bridged = { ...room, roomId: "room-" + room.discordId, zellousId: "zellous-" + room.discordId, contentVersion: Math.max(room.contentVersion, 1) };
-      await this.zellous.apply(this.roomEvent(bridged, "room.upsert", "zellous"));
+      if (!readOnly) await this.zellous.apply(this.roomEvent(bridged, "room.upsert", "zellous"));
       this.mapping.upsertRoom(bridged, "bridge");
-      result.roomsCreated += 1;
+      if (!readOnly) result.roomsCreated += 1;
     }
     for (const room of zellous.rooms) {
-      if (!room.zellousId || this.mapping.getRoomByZellousId(room.zellousId)) continue;
+      if (!room.zellousId) continue;
+      const matched = discordByKey.get(roomKey(room));
+      if (matched) {
+        const bridged = { ...room, roomId: "room-" + room.zellousId, discordId: matched.discordId, contentVersion: Math.max(room.contentVersion, matched.contentVersion, 1) };
+        this.mapping.upsertRoom(bridged, "bridge");
+        continue;
+      }
+      if (this.mapping.getRoomByZellousId(room.zellousId)) continue;
       const bridged = { ...room, roomId: "room-" + room.zellousId, discordId: "discord-" + room.zellousId, contentVersion: Math.max(room.contentVersion, 1) };
-      await this.discord.apply(this.roomEvent(bridged, "room.upsert", "discord"));
+      if (!readOnly) await this.discord.apply(this.roomEvent(bridged, "room.upsert", "discord"));
       this.mapping.upsertRoom(bridged, "bridge");
-      result.roomsCreated += 1;
+      if (!readOnly) result.roomsCreated += 1;
     }
-    for (const mapped of this.mapping.allRooms()) {
-      if (mapped.tombstone) continue;
-      const discordRoom = discord.rooms.find((room) => room.discordId === mapped.discordId);
-      const zellousRoom = zellous.rooms.find((room) => room.zellousId === mapped.zellousId);
-      if (!discordRoom && zellousRoom) {
-        await this.zellous.apply(this.roomEvent({ ...mapped, tombstone: true, deletedAt: Date.now() }, "room.tombstone", "zellous"));
-        this.mapping.tombstoneRoom(mapped, "bridge");
-        result.roomsTombstoned += 1;
-        continue;
-      }
-      if (discordRoom && !zellousRoom) {
-        await this.discord.apply(this.roomEvent({ ...mapped, tombstone: true, deletedAt: Date.now() }, "room.tombstone", "discord"));
-        this.mapping.tombstoneRoom(mapped, "bridge");
-        result.roomsTombstoned += 1;
-        continue;
-      }
-      if (discordRoom && zellousRoom && (discordRoom.contentVersion > zellousRoom.contentVersion || this.metadataDiffers(discordRoom, zellousRoom))) {
-        const newer = { ...zellousRoom, ...discordRoom, roomId: mapped.roomId, zellousId: mapped.zellousId, discordId: mapped.discordId, contentVersion: Math.max(discordRoom.contentVersion, zellousRoom.contentVersion) + 1 };
-        await this.zellous.apply(this.roomEvent(newer, "room.upsert", "zellous"));
-        this.mapping.upsertRoom(newer, "bridge");
-        result.roomsUpdated += 1;
+    if (!readOnly) {
+      for (const mapped of this.mapping.allRooms()) {
+        if (mapped.tombstone) continue;
+        const discordRoom = discord.rooms.find((room) => room.discordId === mapped.discordId);
+        const zellousRoom = zellous.rooms.find((room) => room.zellousId === mapped.zellousId);
+        if (!discordRoom && zellousRoom) {
+          await this.zellous.apply(this.roomEvent({ ...mapped, tombstone: true, deletedAt: Date.now() }, "room.tombstone", "zellous"));
+          this.mapping.tombstoneRoom(mapped, "bridge");
+          result.roomsTombstoned += 1;
+          continue;
+        }
+        if (discordRoom && !zellousRoom) {
+          await this.discord.apply(this.roomEvent({ ...mapped, tombstone: true, deletedAt: Date.now() }, "room.tombstone", "discord"));
+          this.mapping.tombstoneRoom(mapped, "bridge");
+          result.roomsTombstoned += 1;
+          continue;
+        }
+        if (discordRoom && zellousRoom && (discordRoom.contentVersion > zellousRoom.contentVersion || this.metadataDiffers(discordRoom, zellousRoom))) {
+          const newer = { ...zellousRoom, ...discordRoom, roomId: mapped.roomId, zellousId: mapped.zellousId, discordId: mapped.discordId, contentVersion: Math.max(discordRoom.contentVersion, zellousRoom.contentVersion) + 1 };
+          await this.zellous.apply(this.roomEvent(newer, "room.upsert", "zellous"));
+          this.mapping.upsertRoom(newer, "bridge");
+          result.roomsUpdated += 1;
+        }
       }
     }
     this.ledger.createCheckpoint("discord", discord.version);
