@@ -2,15 +2,15 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const nl = String.fromCharCode(10);
-const livePin = "2e364df5f45b29e8f5cf6e747a0c2e9781352e0d";
+const livePin = "5d451241587181e471e263f44db993ba8e2d5764";
 const devPin = "4508d66ff4cd3fde31959cc8b998810f367be321";
 const liveRelays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol", "wss://relay.snort.social"];
 const liveRelayText = liveRelays.join(",");
 const pagesIndex = "https://anentrypoint.github.io/zellous/nostr-chat/index.html";
 const pagesBridge = "https://anentrypoint.github.io/zellous/js/wireweave-bridge.js";
-const changedFiles = ["src/modules/voice-thread.js", "src/vad/clip-filter.js", "src/vad/detector.js", "src/voice-thread-audio.js", "src/voice.js"];
+const changedFiles = ["src/hub-liveness.js", "src/modules/voice-thread.js", "src/vad/clip-filter.js", "src/vad/detector.js", "src/voice-thread-audio.js", "src/voice.js"];
 const allowedDevPinFiles = new Set(["AGENTS.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "src/config.ts", "scripts/live-alignment.mjs", "test/unit/live-alignment.test.ts"]);
-const requiredVoiceFields = ["relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys"];
+const requiredVoiceFields = ["relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys", "hb", "relays", "hub", "uplinkClass", "presenceLiveMs", "hubLiveness", "linkAlive", "hbAt", "netAt", "jitter", "suspect", "seen", "routeTimer", "routeFor", "myClass", "calmAt", "claim", "cls", "relayMap", "relayTxs"];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

@@ -10,10 +10,14 @@ const base = {
 const config = loadConfig(base);
 assert.deepEqual(config.nostrRelays, LIVE_DEFAULT_RELAYS);
 assert.equal(config.relaySource, "live-pages-default");
-assert.equal(LIVE_WIREWEAVE_PIN, "2e364df5f45b29e8f5cf6e747a0c2e9781352e0d");
+assert.equal(config.privilegedIntentsEnabled, false);
+assert.equal(LIVE_WIREWEAVE_PIN, "5d451241587181e471e263f44db993ba8e2d5764");
 
 const override = loadConfig({ ...base, ZELLOUS_RELAYS: "wss://one.example,wss://two.example" });
 assert.deepEqual(override.nostrRelays, ["wss://one.example", "wss://two.example"]);
 assert.equal(override.relaySource, "ZELLOUS_RELAYS");
 
-console.log("CONFIG_CHECK_PASS liveRelays=" + String(LIVE_DEFAULT_RELAYS.length) + " overrideRelays=2");
+const privileged = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true" });
+assert.equal(privileged.privilegedIntentsEnabled, true);
+
+console.log("CONFIG_CHECK_PASS liveRelays=4 overrideRelays=2 privilegedOptIn=false");
