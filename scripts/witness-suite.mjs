@@ -21,6 +21,8 @@ const commands = [
   ["npm", ["run", "snapshot:reconcile"]],
   ["npm", ["run", "live:inventory"]],
   ["npm", ["run", "snapshot:red-check"]],
+  ["npm", ["run", "cleanup:red-check", "--", "--self-test"]],
+  ["npm", ["run", "cleanup:red-check"]],
   ["npm", ["run", "serve:check"]],
   ["npm", ["run", "restart:recovery"]],
   ["npm", ["run", "live:voice"]],

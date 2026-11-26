@@ -14,11 +14,11 @@ Voice uses one worker per identity. Discord Opus receive streams and zellous Web
 
 ## Quick start
 
-Copy .env.example to .env and fill DISCORD_TOKEN, DISCORD_VOICE_TOKENS, the guild ID and relay values. Keep .env at mode 600. Privileged intents are opt-in through DISCORD_PRIVILEGED_INTENTS; the control-plane bridge runs with the switch off and reports degraded enrichment through /health. Then run npm ci, npm run check, npm run build and npm run serve.
+Copy .env.example to .env and fill DISCORD_TOKEN, DISCORD_VOICE_TOKENS, BRIDGE_PRIVATE_KEY_HEX, the guild ID and relay values. Keep .env at mode 600. Privileged intents are opt-in through DISCORD_PRIVILEGED_INTENTS; the control-plane bridge runs with the switch off and reports degraded enrichment through /health. Then run npm ci, npm run check, npm run cleanup, npm run cleanup:red-check, npm run build and npm run serve.
 
 ## Verification
 
-Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; spec and snapshot checks are npm run spec:alignment, npm run spec:red-check, npm run snapshot:reconcile and npm run snapshot:red-check; opt-in switch checks are npm run intent:guard, npm run intent:red-check and npm run serve:check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
+Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; spec and snapshot checks are npm run spec:alignment, npm run spec:red-check, npm run snapshot:reconcile and npm run snapshot:red-check; cleanup checks are npm run cleanup:red-check and npm run cleanup:red-check -- --self-test; opt-in switch checks are npm run intent:guard, npm run intent:red-check and npm run serve:check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
 
 ## References
 
@@ -26,4 +26,7 @@ docs/PROTOCOL.md is the exact cross-system contract. docs/RESEARCH.md records th
 
 ## Live Discover owner key
 
-Set BRIDGE_PRIVATE_KEY_HEX in the ignored .env to the 64-hex private key matching npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42. Then run npm run discover:publish, npm run discover:query and a browser/Discover DOM witness. Tests use a throwaway key; no key value belongs in source or reports.
+Set BRIDGE_PRIVATE_KEY_HEX in the ignored .env to the 64-hex private key matching npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42. Then run npm run discover:publish, npm run discover:query and a browser/Discover DOM witness. Tests use a throwaway key; no key value belongs in source or reports. Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.
+## Owner-authorized reversible duplicate cleanup
+
+Run npm run cleanup once. It preserves canonical channels, deletes only bridge-created duplicates, writes cleanup-backup.json and reports exact before/after counts and IDs. npm run cleanup:rollback and npm run cleanup:red-check provide the rollback path and the red check. destructive cleanup is limited to bridge-created duplicates. Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.

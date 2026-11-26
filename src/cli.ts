@@ -5,6 +5,7 @@ import { publishOwnerBundle } from "./live/discover.js";
 import { publishRoomSnapshot, rollbackRoomSnapshot } from "./live/reconcile.js";
 import { publishChatEvent } from "./live/chat.js";
 import { voiceSmoke } from "./live/voice.js";
+import { cleanupDuplicateChannels, rollbackCleanup } from "./live/cleanup.js";
 import { BridgeService } from "./service.js";
 
 function resolvedIdentity() {
@@ -36,6 +37,20 @@ async function main(): Promise<void> {
   if (command === "snapshot-rollback") {
     const { config } = resolvedIdentity();
     const result = await rollbackRoomSnapshot(config);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (command === "cleanup") {
+    const { config, serverId } = resolvedIdentity();
+    const result = await cleanupDuplicateChannels(config, serverId);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (command === "cleanup-rollback") {
+    const { config } = resolvedIdentity();
+    const result = await rollbackCleanup(config);
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 1;
     return;

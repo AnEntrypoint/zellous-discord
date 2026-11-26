@@ -50,7 +50,7 @@ The live guild currently has more Discord channels than the last published zello
 
 ## 2026-11-26: Reversible new-snapshot reconciliation
 
-The 174 extra Discord channels from the earlier live-serve probe are kept intact. Snapshot reconciliation is now relay-only, reversible and non-destructive: npm run snapshot:reconcile publishes all current Discord channels as a signed kind 30078 snapshot, records the previous snapshot in data/snapshot-backup.json, and reports exact discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath. npm run snapshot:rollback republishes the previous content as a newer replaceable event. npm run snapshot:red-check starts the service read-only after the expected snapshot exists and proves no Discord channel IDs are created.
+The 174 extra Discord channels from the earlier live-serve probe are historical. The owner authorized cleaning up duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup preserves canonical channels, deletes only bridge-created duplicate channels, deduplicates relay snapshot entries, records exact before/after counts and IDs, writes cleanup-backup.json at mode 600 and supports cleanup-rollback. destructive cleanup is limited to bridge-created duplicates. The earlier relay-only reversible snapshot reconciliation still uses data/snapshot-backup.json, snapshot:rollback and npm run snapshot:red-check to prove read-only startup creates no Discord channel IDs.
 
 docs/SPEC_ALIGNMENT.md maps the updated facts checked, architecture and done sections into the protocol contract. The current live Pages pin 5d451241587181e471e263f44db993ba8e2d5764 is the runtime source of truth; pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d is historical.
 
@@ -58,6 +58,9 @@ docs/SPEC_ALIGNMENT.md maps the updated facts checked, architecture and done sec
 
 Identity plumbing now uses ownerHex(config) / bridgeSecretKey(config) with owner hex 988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711 and server id 988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711:discord-367741339393327104. BRIDGE_PRIVATE_KEY_HEX is an .env placeholder; tests use a throwaway key. discover:publish builds owner-signed kind 34550 metadata, kind 30078 Discover listing, kind 30078 roles and owner-author kind 30078 channel snapshot with increasing created_at, at least one text channel and one type:page rules channel. chat:post maps kind 42 root SHA-256(serverId + ":" + channelId). Startup reconciliation and event ingest are read-only by default; Zellous-to-Discord roomId mapping and the two room.upsert REST 400 paths are guarded.
 
-Live owner-signed publication and Discover browser evidence remain held until the owner places BRIDGE_PRIVATE_KEY_HEX in .env and decides whether to rotate the chat-exposed nsec.
+Owner-signed publication uses the existing 64-hex private key in .env. Rotation of the chat-exposed key remains an open note. Discover browser evidence is part of the final witness window.
 
 Open note: the owner nsec appeared in chat before this run, so key rotation remains an open operational risk. The existing 64-hex private key in .env was used for owner-signed publication and was never echoed. Rotation can be done later by replacing BRIDGE_PRIVATE_KEY_HEX and republishing the owner bundle.
+## 2026-11-26: Owner-authorized reversible duplicate cleanup
+
+The owner authorized cleaning up duplicate channels on both Discord and Zellous. npm run cleanup preserves canonical channels, deletes only bridge-created duplicates, deduplicates relay snapshot entries, writes cleanup-backup.json at mode 600 and reports exact before/after counts and IDs. npm run cleanup:rollback and npm run cleanup:red-check provide the rollback path and the no-canonical-deletion/no-new-duplicate red check. destructive cleanup is limited to bridge-created duplicates. The earlier relay-only snapshot reconciliation remains available.

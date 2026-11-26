@@ -9,13 +9,13 @@ The six-file protocol drift is reconciled in docs/LIVE_PIN_DIFF.md: src/hub-live
 
 The live four-relay default is wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social. ZELLOUS_RELAYS is the optional override; NOSTR_RELAYS is a compatibility alias.
 
-The earlier live-serve probe left 174 extra Discord channels in guild 367741339393327104. Those channels stay intact. Deleting or rewriting them is destructive outward cleanup and is not performed. The chosen reversible new-snapshot reconciliation publishes a signed kind 30078 channel snapshot containing all current Discord channels, records the previous relay event and content in data/snapshot-backup.json, and supports snapshot rollback with a newer replaceable event carrying the previous content. No Discord channel is created or deleted by this reconciliation.
+The earlier live-serve probe left 174 extra Discord channels in guild 367741339393327104; that fact is historical. The owner authorized cleaning up duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup deletes only bridge-created duplicate channels, preserves canonical channels, reports exact before/after counts and IDs, and records pre-cleanup state in cleanup-backup.json. cleanup-rollback republishes the previous relay snapshot and recreates the deleted channels with new Discord IDs. destructive cleanup is limited to bridge-created duplicates. The earlier relay-only reversible new-snapshot reconciliation publishes a signed kind 30078 channel snapshot, records the previous relay event and content in data/snapshot-backup.json, and supports snapshot rollback with a newer replaceable event carrying the previous content. No Discord channel is created or deleted by that reconciliation.
 
 The control-plane bridge runs with the existing .env token, DISCORD_PRIVILEGED_INTENTS=false by default, non-privileged Gateway intents, explicit degraded features in /health, real serve-health witnesses and PID cleanup. Startup reconciliation is read-only by default via LIVE_INVENTORY_MODE=read-only and ZDBRIDGE_READ_ONLY=1.
 
-Publication remains held because the voice-token pool, privileged-intent approval, final gated window label zellous-discord-final-4 on tree cf8ff4a, one push, git ls-remote origin main agreement and DONE remain outstanding.
+Publication is gated by final witness window zellous-discord-live-1, one push, git ls-remote origin main agreement and DONE. The voice-token pool remains explicitly degraded as VOICE_POOL_ABSENT.
 
-No destructive cleanup is performed on Discord channels by the reversible new-snapshot reconciliation.
+destructive cleanup is owner-authorized only for bridge-created duplicate channels and is reversible through cleanup-backup.json and cleanup-rollback; the relay-only snapshot reconciliation remains non-destructive.
 
 ## Stage 7 live Discover alignment
 
@@ -28,3 +28,8 @@ Owner bundle events are zellous-discover: kind 34550 server metadata with d=disc
 Kind 42 chat uses e root SHA-256(serverId + ":" + channelId). Zellous-to-Discord messages strip the room- prefix from roomId before REST calls; Discord-to-Zellous messages use chat.sendTo with the owner server id and channel id. Startup reconciliation and the event-ingest path remain read-only by default so no Discord channel writes occur when the expected snapshot exists.
 
 Publication remains held until the owner places BRIDGE_PRIVATE_KEY_HEX in .env, because owner-signed events cannot be published with a wrong-pubkey listing.
+## Owner-authorized reversible duplicate cleanup alignment
+
+The changed facts checked, architecture, Stage 7, who-owns-what and done sections authorize cleanup of duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup preserves canonical channels, deletes only bridge-created duplicates, reports exact before/after counts and IDs, records cleanup-backup.json and supports cleanup-rollback. destructive cleanup is limited to those duplicates. The final witness window zellous-discord-live-1 includes cleanup:red-check and its self-test.
+
+Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.

@@ -12,6 +12,10 @@ const needles = [
   "174 extra Discord channels",
   "reversible new-snapshot reconciliation",
   "destructive cleanup",
+  "owner-authorized reversible duplicate cleanup",
+  "cleanup-backup.json",
+  "cleanup-rollback",
+  "cleanup:red-check",
   "DISCORD_PRIVILEGED_INTENTS=false",
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
   "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
@@ -31,6 +35,9 @@ function selfTest() {
   threw = false;
   try { assertAlignment(all.split("988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711").join("wrong-owner")); } catch { threw = true; }
   assert.ok(threw, "wrong owner identity did not fail");
+  threw = false;
+  try { assertAlignment(all.split("owner-authorized reversible duplicate cleanup").join("unknown cleanup")); } catch { threw = true; }
+  assert.ok(threw, "owner cleanup fact did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
 
