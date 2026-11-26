@@ -21,6 +21,9 @@
     "secret:red-check": "node scripts/secret-scan.mjs --self-test",
     "live:alignment": "node scripts/live-alignment.mjs",
     "alignment:red-check": "node scripts/live-alignment.mjs --self-test",
+    "intent:guard": "node scripts/intent-guard.mjs",
+    "intent:red-check": "node scripts/intent-guard.mjs --self-test",
+    "serve:check": "node scripts/serve-health.mjs",
     "config:check": "node scripts/config-check.mjs",
     "witness:suite": "node scripts/witness-suite.mjs",
     "full:window": "node scripts/full-window.mjs",
@@ -37,7 +40,7 @@
     "nostr-tools": "2.26.1",
     "opusscript": "0.0.8",
     "werift": "0.28.0",
-    "wireweave": "github:AnEntrypoint/wireweave#2e364df5f45b29e8f5cf6e747a0c2e9781352e0d",
+    "wireweave": "github:AnEntrypoint/wireweave#5d451241587181e471e263f44db993ba8e2d5764",
     "ws": "8.23.0",
     "xstate": "5.33.4",
     "zod": "4.6.7"

@@ -4,7 +4,7 @@ A standalone bidirectional bridge between one Discord guild and one zellous serv
 
 ## Architecture
 
-The service owns a Discord adapter, a wireweave-compatible Nostr adapter, a durable JSONL ledger, a reconciliation engine, a suppression ledger, and per-user voice workers. It imports the live GitHub Pages wireweave pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d in Node with injected dependencies, uses the live four-relay default with optional ZELLOUS_RELAYS override, and does not modify the static zellous browser app.
+The service owns a Discord adapter, a wireweave-compatible Nostr adapter, a durable JSONL ledger, a reconciliation engine, a suppression ledger, and per-user voice workers. It imports the live GitHub Pages wireweave pin 5d451241587181e471e263f44db993ba8e2d5764 in Node with injected dependencies, uses the live four-relay default with optional ZELLOUS_RELAYS override, and does not modify the static zellous browser app.
 
 Discord guild 367741339393327104 maps to one zellous server. Discord categories, text channels, announcement channels, forums, threads, stages and voice channels map one-to-one to zellous rooms or channels. Canonical envelopes carry source, source ID, operation, version and idempotency key. Replies, replay and echo suppression are ledgered.
 
@@ -14,11 +14,11 @@ Voice uses one worker per identity. Discord Opus receive streams and zellous Web
 
 ## Quick start
 
-Copy .env.example to .env and fill DISCORD_TOKEN, DISCORD_VOICE_TOKENS, the guild ID and relay values. Keep .env at mode 600. Enable the required Gateway intents and invite every bot to the guild. Then run npm ci, npm run check, npm run build and npm run serve.
+Copy .env.example to .env and fill DISCORD_TOKEN, DISCORD_VOICE_TOKENS, the guild ID and relay values. Keep .env at mode 600. Privileged intents are opt-in through DISCORD_PRIVILEGED_INTENTS; the control-plane bridge runs with the switch off and reports degraded enrichment through /health. Then run npm ci, npm run check, npm run build and npm run serve.
 
 ## Verification
 
-Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
+Use npm run witness:suite for local witnesses. Live alignment commands are npm run live:alignment and npm run alignment:red-check; opt-in switch checks are npm run intent:guard, npm run intent:red-check and npm run serve:check; live commands are npm run live:inventory and npm run live:voice. The full final window is npm run full:window. docs/VERIFICATION.md lists every witness and red check.
 
 ## References
 
