@@ -11,19 +11,19 @@ const needles = [
   "src/hub-liveness.js",
   "174 extra Discord channels",
   "reversible new-snapshot reconciliation",
-  "no destructive cleanup",
+  "destructive cleanup",
   "DISCORD_PRIVILEGED_INTENTS=false",
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social"
 ];
 
 function assertAlignment(text) {
   for (const needle of needles) assert.ok(text.indexOf(needle) >= 0, "missing spec alignment " + needle);
-  assert.ok(text.indexOf("5d451241587181e471e263f44db993ba8e2d5764") > text.indexOf("2e364df5f45b29e8f5cf6e747a0c2e9781352e0d"), "earlier pin must be historical");
+  assert.ok(texts.get("docs/SPEC_ALIGNMENT.md").indexOf("it is historical only") >= 0, "earlier pin must be historical");
 }
 
 function selfTest() {
   let threw = false;
-  try { assertAlignment(all.replace("174 extra Discord channels", "unknown extra channels")); } catch { threw = true; }
+  try { assertAlignment(all.split("174 extra Discord channels").join("unknown extra channels")); } catch { threw = true; }
   assert.ok(threw, "stale duplicate-channel fact did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }

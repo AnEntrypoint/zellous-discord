@@ -4,7 +4,7 @@ import { once } from "node:events";
 import { loadConfigFromEnvFile } from "../dist/config.js";
 import { bridgeSecretKey, publicKeyHex, resolveServerId } from "../dist/identity.js";
 import { discordInventory, liveInventory } from "../dist/live/inventory.js";
-import { findSecretPattern } from "../dist/redaction.js";
+import { findSecretPattern, redactText } from "../dist/redaction.js";
 import { readFileSync } from "node:fs";
 import { SimplePool } from "nostr-tools";
 import { useWebSocketImplementation } from "nostr-tools/pool";
@@ -37,11 +37,11 @@ async function main() {
   assert.equal(backup.serverId, serverId, "snapshot backup belongs to another server");
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
-  const expected = await pool.get(config.nostrRelays, { ids: [backup.publishedEventId] } as any, { maxWait: 8000 });
+  const expected = await pool.get(config.nostrRelays, { ids: [backup.publishedEventId] }, { maxWait: 8000 });
   pool.destroy();
   assert.equal(expected?.id, backup.publishedEventId, "expected snapshot does not already exist on relays");
   const before = ids(await discordInventory(config));
-  const port = 8792;
+  const port = 8794;
   const child = spawn(process.execPath, ["dist/cli.js", "serve"], {
     env: { ...process.env, HEALTH_PORT: String(port), DISCORD_PRIVILEGED_INTENTS: "false", ZDBRIDGE_READ_ONLY: "1" },
     stdio: ["ignore", "pipe", "pipe"]
@@ -50,9 +50,11 @@ async function main() {
   child.stdout.on("data", function(chunk) { output += chunk.toString(); });
   child.stderr.on("data", function(chunk) { output += chunk.toString(); });
   await new Promise(function(resolve) { setTimeout(resolve, 5000); });
-  const response = await fetch("http://127.0.0.1:" + String(port) + "/health");
+  let response;
+  try { response = await fetch("http://127.0.0.1:" + String(port) + "/health"); }
+  catch (error) { child.kill("SIGKILL"); throw new Error("health fetch failed; redacted output: " + redactText(output).slice(0, 2000)); }
+  if (response.status !== 200) { child.kill("SIGKILL"); throw new Error("health returned " + String(response.status) + "; redacted output: " + redactText(output).slice(0, 2000)); }
   const health = await response.json();
-  assert.equal(response.status, 200);
   assert.equal(health.status, "degraded");
   assert.equal(health.privilegedIntentsEnabled, false);
   assert.equal(health.voiceReflectionComplete, false);
