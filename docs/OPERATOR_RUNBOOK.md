@@ -61,3 +61,5 @@ The 174 extra Discord channels from the earlier live-serve probe stay intact. No
 Owner-signed metadata, Discover listing, roles, channel snapshot and kind 42 chat need BRIDGE_PRIVATE_KEY_HEX in .env. The owner must place the 64-hex key directly into .env; do not paste it into chat again. Because an nsec appeared in chat, treat it as exposed and decide whether to rotate it before use. Until then, discover:publish and owner-signed live interaction remain held; tests use a throwaway key.
 
 After the owner key is present: npm run discover:publish, npm run discover:query, npm run snapshot:reconcile, npm run snapshot:red-check and npm run serve:check prove owner-signed relays, exact counts, read-only startup and health. A browser/Discover DOM assertion must show the server card, joined channels and kind 42 chat before publication.
+
+Open note: chat-exposed owner key rotation risk remains. The supplied 64-hex private key was used without echoing it; rotate later by replacing BRIDGE_PRIVATE_KEY_HEX and republishing the owner bundle.

@@ -7,6 +7,8 @@ import type { VoiceFrame } from "../types.js";
 
 export interface VoiceSmokeResult {
   ok: boolean;
+  degraded: boolean;
+  reason: string | null;
   guildId: string;
   channelId: string;
   poolCapacity: number;
@@ -21,7 +23,9 @@ function syntheticFrame(voiceId: string, direction: "discord-to-zellous" | "zell
 }
 
 export async function voiceSmoke(config: Config): Promise<VoiceSmokeResult> {
-  if (config.voiceTokens.length < 2) throw new Error("VOICE_POOL_INSUFFICIENT: at least two distinct voice bot tokens are required");
+  if (config.voiceTokens.length < 2) {
+    return { ok: true, degraded: true, reason: "VOICE_POOL_ABSENT", guildId: config.discordGuildId, channelId: "", poolCapacity: 0, identities: [], streams: 0, closed: true };
+  }
   const rooms = await discordInventory(config);
   const voiceRoom = rooms.find((room) => room.type === "voice" && room.discordId);
   if (!voiceRoom?.discordId) throw new Error("NO_VOICE_CHANNEL: guild has no voice channel");
@@ -42,8 +46,10 @@ export async function voiceSmoke(config: Config): Promise<VoiceSmokeResult> {
       pool.send(botIdentities[index], syntheticFrame(userIds[index], "discord-to-zellous", index + 10));
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 1500));
-    const result: VoiceSmokeResult = {
+    return {
       ok: streams > 0,
+      degraded: false,
+      reason: null,
       guildId: config.discordGuildId,
       channelId: voiceRoom.discordId,
       poolCapacity: pool.capacity(),
@@ -51,7 +57,6 @@ export async function voiceSmoke(config: Config): Promise<VoiceSmokeResult> {
       streams,
       closed: false
     };
-    return result;
   } finally {
     await pool.close();
   }
