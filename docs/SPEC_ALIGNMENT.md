@@ -33,3 +33,5 @@ Publication remains held until the owner places BRIDGE_PRIVATE_KEY_HEX in .env, 
 The changed facts checked, architecture, Stage 7, who-owns-what and done sections authorize cleanup of duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup preserves canonical channels, deletes only bridge-created duplicates, reports exact before/after counts and IDs, records cleanup-backup.json and supports cleanup-rollback. destructive cleanup is limited to those duplicates. The final witness window zellous-discord-live-1 includes cleanup:red-check and its self-test.
 
 Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.
+
+owner-authorized reversible duplicate cleanup uses cleanup-backup.json, cleanup-rollback and cleanup:red-check; destructive cleanup is limited to bridge-created duplicates.
