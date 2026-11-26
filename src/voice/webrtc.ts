@@ -55,6 +55,6 @@ export class WeriftVoicePeer {
   private signal(signalType: "offer" | "answer" | "ice" | "relay", sdp: string | null, iceCandidate: unknown): VoiceSignal {
     const roomId = voiceRoomId(this.serverId, this.channelName);
     const dTag = "zellous-rtc:" + roomId + ":" + this.fromPubkey + ":" + this.toPubkey + ":" + signalType + ":" + String(Date.now());
-    return { signalType, sdp, iceCandidate: iceCandidate as VoiceSignal["iceCandidate"], fromPubkey: this.fromPubkey, toPubkey: this.toPubkey, roomId, dTag, pTag: this.toPubkey, rTag: roomId, streamId: null, src: null, muteMs: null, unmuteMs: null, fragment: false, clipSpliced: false, relayed: false, remoteKeys: [] };
+    return { signalType, sdp, iceCandidate: iceCandidate as VoiceSignal["iceCandidate"], fromPubkey: this.fromPubkey, toPubkey: this.toPubkey, roomId, dTag, pTag: this.toPubkey, rTag: roomId, streamId: null, src: null, muteMs: null, unmuteMs: null, fragment: false, clipSpliced: false, relayed: false, remoteKeys: [], relays: null, hub: null, uplinkClass: null, presenceLiveMs: 30000, hb: false, hbAt: 0, netAt: 0, jitter: 0, linkAlive: false, suspect: false, seen: 0, routeTimer: null, routeFor: null, myClass: null, calmAt: 0, claim: null, cls: 0, relayMap: [], relayTxs: [] };
   }
 }
