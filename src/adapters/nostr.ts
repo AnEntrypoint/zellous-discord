@@ -12,6 +12,8 @@ export class NostrAdapter implements BridgeAdapter {
 
   constructor(private readonly config: Config, private readonly serverId: string, private readonly logger: Logger) {
     this.ww = createNodeWireweave(config);
+    this.ww.channels.load(this.serverId, () => {});
+    void this.ww.servers.switchTo(this.serverId);
   }
 
   get publicKey(): string {
@@ -33,31 +35,35 @@ export class NostrAdapter implements BridgeAdapter {
   async apply(event: CanonicalEvent): Promise<ApplyResult> {
     const room = event.payload.room as RoomRecord | undefined;
     if (event.operation === "room.create" || event.operation === "room.upsert") {
-      if (room) this.ww.channels.create(room.name, room.type, room.categoryId ?? "general", { parentChannelId: room.parentId, ...roomToZellousChannel(room) });
+      if (room) {
+        const existing = (this.ww.channels.channels ?? []).find((channel: any) => channel.id === room.zellousId || channel.name === room.name);
+        if (existing) await this.ww.channels.update(existing.id, roomToZellousChannel({ ...room, zellousId: existing.id }));
+        else await this.ww.channels.create(room.name, room.type, room.categoryId ?? "general", { parentChannelId: room.parentId, ...roomToZellousChannel(room) });
+      }
     } else if (event.operation === "room.rename") {
-      if (room?.zellousId) this.ww.channels.rename(room.zellousId, room.name);
+      if (room?.zellousId) await this.ww.channels.rename(room.zellousId, room.name);
     } else if (event.operation === "room.reorder" || event.operation === "room.reparent" || event.operation === "room.archive") {
-      if (room?.zellousId) this.ww.channels.update(room.zellousId, roomToZellousChannel(room));
+      if (room?.zellousId) await this.ww.channels.update(room.zellousId, roomToZellousChannel(room));
     } else if (event.operation === "room.delete" || event.operation === "room.tombstone") {
-      if (room?.zellousId) this.ww.channels.remove(room.zellousId);
+      if (room?.zellousId) await this.ww.channels.remove(room.zellousId);
     } else if (event.operation === "message.create" || event.operation === "message.correction") {
       const message = event.payload.message as { content?: string } | undefined;
-      if (message?.content) this.ww.chat.send(message.content);
+      if (message?.content) await this.ww.chat.send(message.content);
     } else if (event.operation === "message.delete") {
       const message = event.payload.message as { zellousEventId?: string } | undefined;
-      if (message?.zellousEventId) this.ww.chat.deleteMessage(message.zellousEventId);
+      if (message?.zellousEventId) await this.ww.chat.deleteMessage(message.zellousEventId);
     } else if (event.operation === "message.reaction") {
       const message = event.payload.message as { zellousEventId?: string; author?: { bridgePubkey?: string }; reactions?: Array<{ emoji: string }> } | undefined;
       const emoji = message?.reactions?.at(-1)?.emoji ?? "+";
-      if (message?.zellousEventId) this.ww.reactions.react(message.zellousEventId, message.author?.bridgePubkey ?? "", emoji);
+      if (message?.zellousEventId) await this.ww.reactions.react(message.zellousEventId, message.author?.bridgePubkey ?? "", emoji);
     } else if (event.operation === "message.typing") {
-      this.ww.chat.sendTyping();
+      await this.ww.chat.sendTyping();
     } else if (event.operation === "presence.update") {
       const presence = event.payload.presence as { status?: string; custom?: string } | undefined;
-      if (presence?.status) this.ww.presence.set(presence.status, presence.custom ?? "");
+      if (presence?.status) await this.ww.presence.set(presence.status, presence.custom ?? "");
     } else if (event.operation === "profile.update") {
       const profile = event.payload.profile as { name?: string; avatarUrl?: string } | undefined;
-      if (profile?.name) this.ww.chat.updateProfile(this.ww.auth.pubkey, { name: profile.name, picture: profile.avatarUrl ?? "" });
+      if (profile?.name) await this.ww.chat.updateProfile(this.ww.auth.pubkey, { name: profile.name, picture: profile.avatarUrl ?? "" });
     }
     return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: false };
   }
