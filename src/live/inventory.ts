@@ -29,7 +29,9 @@ export function compareInventories(discordRooms: RoomRecord[], zellousRooms: Roo
     if (!zellousRoom) continue;
     if (discordRoom.type !== zellousRoom.type || discordRoom.name !== zellousRoom.name || discordRoom.position !== zellousRoom.position) mismatches.push(key);
   }
-  return { ok: missingInZellous.length === 0 && missingInDiscord.length === 0 && mismatches.length === 0, discordCount: discordRooms.length, zellousCount: zellousRooms.length, missingInZellous, missingInDiscord, mismatches };
+  const countsMatch = discordRooms.length === zellousRooms.length;
+  if (!countsMatch) mismatches.push("room-count:" + String(discordRooms.length) + "!=" + String(zellousRooms.length));
+  return { ok: countsMatch && missingInZellous.length === 0 && missingInDiscord.length === 0 && mismatches.length === 0, discordCount: discordRooms.length, zellousCount: zellousRooms.length, missingInZellous, missingInDiscord, mismatches };
 }
 
 export async function discordInventory(config: Config): Promise<RoomRecord[]> {
