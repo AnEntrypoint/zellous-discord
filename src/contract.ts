@@ -24,7 +24,8 @@ export const VOICE_FIELDS = [
   "speaking", "muted", "deafened", "connectionQuality", "leave", "signalType", "sdp", "iceCandidate", "fromPubkey",
   "toPubkey", "dTag", "pTag", "rTag", "opusPayload", "sequence", "timestamp", "sampleRate", "channels", "codec",
   "marker", "action", "channel", "server", "ts", "rttScores", "capScores", "reflexive", "uplinkKbps",
-  "relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys"
+  "relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys",
+  "hb", "relays", "hub", "uplinkClass", "presenceLiveMs", "hubLiveness", "linkAlive", "hbAt", "netAt", "jitter", "suspect", "seen", "routeTimer", "routeFor", "myClass", "calmAt", "claim", "cls", "relayMap", "relayTxs"
 ];
 
 export const ENVELOPE_FIELDS = [
