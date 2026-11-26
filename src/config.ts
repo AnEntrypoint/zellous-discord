@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { LogLevel } from "./logger.js";
 
-export const LIVE_WIREWEAVE_PIN = "2e364df5f45b29e8f5cf6e747a0c2e9781352e0d";
+export const LIVE_WIREWEAVE_PIN = "5d451241587181e471e263f44db993ba8e2d5764";
 export const DEVELOPMENT_WIREWEAVE_PIN = "4508d66ff4cd3fde31959cc8b998810f367be321";
 export const LIVE_PAGES_URL = "https://anentrypoint.github.io/zellous/";
 export const LIVE_DEFAULT_RELAYS = [
@@ -38,6 +38,7 @@ export interface Config {
   discordGuildId: string;
   voiceTokens: SecretString[];
   voiceIdentityCapacity: number;
+  privilegedIntentsEnabled: boolean;
   nostrRelays: string[];
   relaySource: string;
   zellousServerId: string;
@@ -56,6 +57,7 @@ export interface Config {
 const schema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_VOICE_TOKENS: z.string().default(""),
+  DISCORD_PRIVILEGED_INTENTS: z.enum(["true", "false", "1", "0"]).default("false"),
   DISCORD_GUILD_ID: z.string().regex(/^[0-9]{17,20}$/).default("367741339393327104"),
   NOSTR_RELAYS: z.string().default(LIVE_DEFAULT_RELAYS.join(",")),
   ZELLOUS_RELAYS: z.string().default(""),
@@ -129,6 +131,7 @@ export function loadConfig(environment: Record<string, string>): Config {
     discordGuildId: parsed.DISCORD_GUILD_ID,
     voiceTokens,
     voiceIdentityCapacity: voiceTokens.length,
+    privilegedIntentsEnabled: parsed.DISCORD_PRIVILEGED_INTENTS === "true" || parsed.DISCORD_PRIVILEGED_INTENTS === "1",
     nostrRelays: parseRelays(relays.value),
     relaySource: relays.source,
     zellousServerId: parsed.ZELLOUS_SERVER_ID,
