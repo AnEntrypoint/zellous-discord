@@ -5,7 +5,7 @@ import { Ledger } from "./ledger.js";
 import { MappingStore } from "./mapping.js";
 import { SyncEngine } from "./sync/engine.js";
 import { MockAdapter } from "./adapters/mock.js";
-import { DiscordAdapter } from "./adapters/discord.js";
+import { degradedFeatures, DiscordAdapter, gatewayIntents } from "./adapters/discord.js";
 import { NostrAdapter } from "./adapters/nostr.js";
 import { HealthServer } from "./health.js";
 import { Metrics } from "./observability.js";
@@ -27,6 +27,7 @@ export class BridgeService {
   async start(): Promise<void> {
     const config = loadConfigFromEnvFile();
     this.config = config;
+    if (!process.env.ZDBRIDGE_READ_ONLY) process.env.ZDBRIDGE_READ_ONLY = config.liveInventoryMode === "reconcile" ? "0" : "1";
     this.logger = new Logger(config.logLevel);
     const seed = loadOrCreateSeed(config.bridgeStateDir);
     const bridgePublicKey = publicKeyHex(deriveSecretKey(seed, "bridge"));
@@ -71,8 +72,14 @@ export class BridgeService {
 
   snapshot(): Record<string, unknown> {
     const state = this.ledger?.getState();
+    const features = this.config ? degradedFeatures(this.config) : ["uninitialized"];
     return {
-      status: this.stopping ? "stopping" : "ok",
+      status: this.stopping ? "stopping" : features.length > 0 ? "degraded" : "ok",
+      privilegedIntentsEnabled: this.config?.privilegedIntentsEnabled ?? false,
+      gatewayIntents: this.config ? gatewayIntents(this.config).map(String) : [],
+      degradedFeatures: features,
+      voiceTokenCount: this.config?.voiceTokens.length ?? 0,
+      voiceReflectionComplete: (this.config?.voiceTokens.length ?? 0) >= 2,
       rooms: state?.rooms.size ?? 0,
       messages: state?.messages.size ?? 0,
       suppressions: state?.suppressions.size ?? 0,
