@@ -5,6 +5,20 @@ import type { Logger } from "../logger.js";
 import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresenceToPresence, mapMessageToDiscordPayload, roomToDiscordCreate, roomToDiscordPatch, type DiscordChannelLike, type DiscordMessageLike } from "../mappers.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
 
+export const BASE_INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildMessageTyping, GatewayIntentBits.GuildVoiceStates];
+export const PRIVILEGED_INTENTS = [GatewayIntentBits.MessageContent, GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildMembers];
+
+export function gatewayIntents(config: Config): number[] {
+  return config.privilegedIntentsEnabled ? [...BASE_INTENTS, ...PRIVILEGED_INTENTS] : [...BASE_INTENTS];
+}
+
+export function degradedFeatures(config: Config): string[] {
+  const features: string[] = [];
+  if (!config.privilegedIntentsEnabled) features.push("message-content", "presence", "member-list");
+  if (config.voiceTokens.length < 2) features.push("per-user-voice-reflection");
+  return features;
+}
+
 function bridgeActor() {
   return { source: "discord" as Source, sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null };
 }
@@ -56,20 +70,14 @@ export class DiscordAdapter implements BridgeAdapter {
   }
 
   async subscribe(handler: (event: CanonicalEvent) => Promise<void>): Promise<() => Promise<void>> {
-    const client = new Client({
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildMessageTyping,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.GuildMembers
-      ]
-    });
+    const client = new Client({ intents: gatewayIntents(this.config) });
     this.client = client;
-    const publish = async (event: CanonicalEvent) => { await handler(event); };
+    let ready = false;
+    const publish = async (event: CanonicalEvent) => {
+      if (!ready) return;
+      try { await handler(event); } catch (error) { this.logger.error("discord event degraded", { operation: event.operation, message: error instanceof Error ? error.message : String(error) }); }
+    };
+    client.on(Events.ClientReady, () => { ready = true; });
     client.on(Events.ChannelCreate, async (channel: any) => { await publish(this.channelEvent(channel, "room.create")); });
     client.on(Events.ChannelUpdate, async (channel: any) => { await publish(this.channelEvent(channel, "room.rename")); });
     client.on(Events.ChannelDelete, async (channel: any) => { await publish(this.channelEvent(channel, "room.delete")); });
@@ -82,6 +90,7 @@ export class DiscordAdapter implements BridgeAdapter {
     client.on(Events.VoiceStateUpdate, async (state: any) => { await publish(this.voiceEvent(state)); });
     client.on(Events.Error, async (error: Error) => { this.logger.error("discord gateway error", { message: error.message }); });
     await client.login(this.config.discordToken.reveal());
+    if (client.isReady()) ready = true;
     return async () => { client.destroy(); this.client = null; };
   }
 
