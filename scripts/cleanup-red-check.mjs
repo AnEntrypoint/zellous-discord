@@ -47,7 +47,11 @@ async function main() {
   assert.equal(health.serverId, serverId, "health server id mismatch");
   assert.ok(Array.isArray(health.degradedFeatures) && health.degradedFeatures.length > 0, "degraded features hidden");
   child.kill("SIGTERM");
-  await Promise.race([once(child, "exit"), sleep(5000).then(function() { if (!child.killed) child.kill("SIGKILL"); })]);
+  const exited = await Promise.race([once(child, "exit").then(function() { return true; }), sleep(5000).then(function() { return false; })]);
+  if (!exited) {
+    child.kill("SIGKILL");
+    await once(child, "exit");
+  }
   const text = output.join("");
   assert.equal(findSecretPattern(text), null, "token or private key value in output");
   const after = await cleanupState(config, serverId);
