@@ -9,7 +9,7 @@ const liveRelayText = liveRelays.join(",");
 const pagesIndex = "https://anentrypoint.github.io/zellous/nostr-chat/index.html";
 const pagesBridge = "https://anentrypoint.github.io/zellous/js/wireweave-bridge.js";
 const changedFiles = ["src/hub-liveness.js", "src/modules/voice-thread.js", "src/vad/clip-filter.js", "src/vad/detector.js", "src/voice-thread-audio.js", "src/voice.js"];
-const allowedDevPinFiles = new Set(["AGENTS.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "src/config.ts", "scripts/live-alignment.mjs", "test/unit/live-alignment.test.ts"]);
+const allowedDevPinFiles = new Set(["AGENTS.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/SPEC_ALIGNMENT.md", "src/config.ts", "scripts/live-alignment.mjs", "test/unit/live-alignment.test.ts"]);
 const requiredVoiceFields = ["relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys", "hb", "relays", "hub", "uplinkClass", "presenceLiveMs", "hubLiveness", "linkAlive", "hbAt", "netAt", "jitter", "suspect", "seen", "routeTimer", "routeFor", "myClass", "calmAt", "claim", "cls", "relayMap", "relayTxs"];
 
 function assert(condition, message) {

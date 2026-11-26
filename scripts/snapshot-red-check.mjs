@@ -5,6 +5,9 @@ import { loadConfigFromEnvFile } from "../dist/config.js";
 import { bridgeSecretKey, publicKeyHex, resolveServerId } from "../dist/identity.js";
 import { discordInventory, liveInventory } from "../dist/live/inventory.js";
 import { findSecretPattern } from "../dist/redaction.js";
+import { readFileSync } from "node:fs";
+import { SimplePool } from "nostr-tools";
+import { useWebSocketImplementation } from "nostr-tools/pool";
 
 function ids(rooms) {
   return rooms.map(function(room) { return String(room.discordId); }).sort();
@@ -30,8 +33,13 @@ async function main() {
   const secretKey = bridgeSecretKey(config);
   const ownerPubkey = publicKeyHex(secretKey);
   const serverId = resolveServerId(config, ownerPubkey);
-  const expected = await liveInventory(config, serverId, ownerPubkey);
-  assert.equal(expected.ok, true, "expected snapshot does not already exist");
+  const backup = JSON.parse(readFileSync("data/snapshot-backup.json", "utf8"));
+  assert.equal(backup.serverId, serverId, "snapshot backup belongs to another server");
+  useWebSocketImplementation(globalThis.WebSocket);
+  const pool = new SimplePool({ enableReconnect: true });
+  const expected = await pool.get(config.nostrRelays, { ids: [backup.publishedEventId] } as any, { maxWait: 8000 });
+  pool.destroy();
+  assert.equal(expected?.id, backup.publishedEventId, "expected snapshot does not already exist on relays");
   const before = ids(await discordInventory(config));
   const port = 8792;
   const child = spawn(process.execPath, ["dist/cli.js", "serve"], {

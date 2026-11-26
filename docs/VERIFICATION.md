@@ -24,5 +24,5 @@ The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when eve
 | Spec alignment | npm run spec:alignment | Current pin, historical pin, six-file drift, 174 extra channels, reversible snapshot and opt-in intents are recorded in the contract |
 | Spec red check | npm run spec:red-check | A stale fact fails |
 | New snapshot reconciliation | npm run snapshot:reconcile | Exact discordCount, zellousCount, duplicateNames, eventId, previousEventId and rollbackPath; no destructive cleanup |
-| Snapshot startup red check | npm run snapshot:red-check | Expected snapshot exists; read-only startup creates zero Discord channels; health is degraded; PID cleanup leaves no orphan |
+| Snapshot startup red check | npm run snapshot:red-check | Expected relay snapshot event exists; read-only startup creates zero Discord channels; health is degraded; PID cleanup leaves no orphan |
 | Snapshot rollback | npm run snapshot:rollback | Previous snapshot content is republished as a newer replaceable event |

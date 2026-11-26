@@ -14,3 +14,5 @@ The earlier live-serve probe left 174 extra Discord channels in guild 3677413393
 The control-plane bridge runs with the existing .env token, DISCORD_PRIVILEGED_INTENTS=false by default, non-privileged Gateway intents, explicit degraded features in /health, real serve-health witnesses and PID cleanup. Startup reconciliation is read-only by default via LIVE_INVENTORY_MODE=read-only and ZDBRIDGE_READ_ONLY=1.
 
 Publication remains held because the voice-token pool, privileged-intent approval, final gated window label zellous-discord-final-4 on tree cf8ff4a, one push, git ls-remote origin main agreement and DONE remain outstanding.
+
+No destructive cleanup is performed on Discord channels by the reversible new-snapshot reconciliation.
