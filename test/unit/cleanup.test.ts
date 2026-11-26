@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { assertBridgeDuplicates, bridgeCreatedCutoff, channelCreatePayload, duplicateKeys, splitChannels } from "../../src/live/cleanup.js";
 
-function channel(id, name, type = 0) {
+function channel(id: string, name: string, type = 0): any {
   return { id, type, name, parent_id: null, position: 0, topic: null, nsfw: false };
 }
 
@@ -33,4 +33,4 @@ test("rollback payload preserves channel shape", function() {
   assert.equal(payload.type, 0);
   assert.equal(payload.topic, "hello");
   assert.ok(Array.isArray(payload.permission_overwrites));
-}
+});

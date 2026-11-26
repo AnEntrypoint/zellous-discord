@@ -128,7 +128,7 @@ export async function rawChannels(config: Config): Promise<DiscordChannelLike[]>
   return await discordRequest(config, "GET", "/guilds/" + config.discordGuildId + "/channels") as DiscordChannelLike[];
 }
 
-function snapshotFilter(serverId: string, owner: string): Record<string, unknown> {
+function snapshotFilter(serverId: string, owner: string): any {
   return { kinds: [30078], authors: [owner], "#d": [dtag("channels", serverId)], limit: 1000 };
 }
 
