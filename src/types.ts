@@ -170,6 +170,25 @@ export interface VoiceSignal {
   clipSpliced: boolean;
   relayed: boolean;
   remoteKeys: string[];
+  relays: Record<string, string> | null;
+  hub: string | null;
+  uplinkClass: number | null;
+  presenceLiveMs: number;
+  hb: boolean;
+  hbAt: number;
+  netAt: number;
+  jitter: number;
+  linkAlive: boolean;
+  suspect: boolean;
+  seen: number;
+  routeTimer: number | null;
+  routeFor: string | null;
+  myClass: number | null;
+  calmAt: number;
+  claim: string | null;
+  cls: number;
+  relayMap: string[];
+  relayTxs: string[];
 }
 
 export interface VoiceFrame {
