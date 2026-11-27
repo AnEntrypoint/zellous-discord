@@ -40,8 +40,7 @@ function selfTest() {
   threw = false;
   try { assertRoot(wrong, channelId); } catch { threw = true; }
   assert.ok(threw, "wrong Discord source ID did not fail");
-  const missing = new Map([["src/config.ts", ""]]);
-  let threw = false;
+  threw = false;
   try { assert.equal(rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [] }).size, 1, "empty root map did not fail"); } catch { threw = true; }
   assert.ok(threw, "empty live ledger root map did not fail");
   console.log("CHANNEL_ROOT_RED_CHECK_SELF_TEST_PASS");
