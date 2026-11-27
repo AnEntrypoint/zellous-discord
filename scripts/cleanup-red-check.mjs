@@ -23,6 +23,7 @@ function selfTest() {
 
 async function main() {
   const config = loadConfigFromEnvFile();
+  const port = config.healthPort;
   const owner = ownerHex(config);
   const serverId = resolveServerId(config, owner);
   const before = await cleanupState(config, serverId);
@@ -33,13 +34,13 @@ async function main() {
   const output = [];
   const child = spawn(process.execPath, ["dist/cli.js", "serve"], {
     cwd: process.cwd(),
-    env: { ...process.env, ZDBRIDGE_READ_ONLY: "1", HEALTH_PORT: "8797" },
+    env: { ...process.env, ZDBRIDGE_READ_ONLY: "1", HEALTH_PORT: String(port) },
     stdio: ["ignore", "pipe", "pipe"]
   });
   child.stdout.on("data", function(chunk) { output.push(String(chunk)); });
   child.stderr.on("data", function(chunk) { output.push(String(chunk)); });
   await sleep(5000);
-  const healthResponse = await fetch("http://127.0.0.1:8797/health");
+  const healthResponse = await fetch("http://127.0.0.1:" + String(port) + "/health");
   assert.equal(healthResponse.status, 200, "health endpoint unavailable");
   const health = await healthResponse.json();
   assert.ok(health.status === "ok" || health.status === "degraded", "health status missing");
