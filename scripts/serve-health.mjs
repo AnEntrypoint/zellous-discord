@@ -31,15 +31,16 @@ try {
   throw new Error("health fetch failed; redacted service output: " + findSecretPatternName(output).slice(0, 2000));
 }
 const health = await response.json();
+const expectedConfig = loadConfigFromEnvFile(".env", { ...process.env, DISCORD_PRIVILEGED_INTENTS: "false", HEALTH_PORT: String(port) });
 assert.equal(response.status, 200);
 assert.ok(health.status === "ok" || health.status === "degraded");
-assert.equal(health.privilegedIntentsEnabled, true);
-assert.equal(health.gatewayIntents.includes("32768"), true);
+assert.equal(health.privilegedIntentsEnabled, expectedConfig.privilegedIntentsEnabled, "privileged-intent source of truth mismatch");
+assert.equal(health.gatewayIntents.includes("32768"), expectedConfig.privilegedIntentsEnabled, "gateway intent mismatch");
+for (const feature of ["message-content", "presence", "member-list"]) assert.ok(health.degradedFeatures.includes(feature), "hidden privileged-intent failure");
 assert.equal(health.voiceTokenCount, 2);
-const liveConfig = loadConfigFromEnvFile();
-const proofPath = join(liveConfig.bridgeStateDir, "voice-proof.json");
+const proofPath = join(expectedConfig.bridgeStateDir, "voice-proof.json");
 const proof = existsSync(proofPath) ? JSON.parse(readFileSync(proofPath, "utf8")) : emptyVoiceProof();
-const readiness = voiceReadiness(liveConfig, proof);
+const readiness = voiceReadiness(expectedConfig, proof);
 assert.equal(health.voiceReflectionComplete, readiness.voiceReflectionComplete);
 assert.equal(health.voiceTokenCount, readiness.voiceTokenCount);
 assert.equal(health.voiceReadinessReason, readiness.reason);
