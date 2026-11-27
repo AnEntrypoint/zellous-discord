@@ -7,7 +7,7 @@ import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresence
 import { discordMessagePubkey } from "../live/source.js";
 import type { MappingStore } from "../mapping.js";
 import type { BridgeEchoStore } from "../sync/echo.js";
-import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
+import type { ActorRef, AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
 
 export const BASE_INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildMessageTyping, GatewayIntentBits.GuildVoiceStates];
 export const PRIVILEGED_INTENTS = [GatewayIntentBits.MessageContent, GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildMembers];
@@ -167,7 +167,7 @@ export class DiscordAdapter implements BridgeAdapter {
     const channelId = String(message.channelId ?? message.channel?.id ?? "");
     const room = mapDiscordChannelToRoom({ id: channelId, type: 0, name: "channel" }, this.config.zellousServerId, this.config.discordGuildId);
     const gateway = mapGatewayMessageToDiscordLike(message);
-    const actor = { source: this.source, sourceUserId: gateway.author.id, bridgePubkey: discordMessagePubkey(this.config, gateway.author.id), displayName: gateway.author.username, avatarUrl: gateway.author.avatar };
+    const actor: ActorRef = { source: this.source, sourceUserId: gateway.author.id, bridgePubkey: discordMessagePubkey(this.config, gateway.author.id), displayName: gateway.author.username, avatarUrl: gateway.author.avatar ?? null };
     const mapped = mapDiscordMessageToMessage(gateway, room, actor);
     const nativeId = String(message.id);
     return createCanonicalEvent({

@@ -20,7 +20,7 @@ test("owner bundle has metadata, listed Discover, roles and channels with text a
   const channels = ownerChannels(rooms);
   assert.ok(channels.some(function(channel) { return channel.type === "text"; }));
   assert.ok(channels.some(function(channel) { return channel.type === "page"; }));
-  const events = buildOwnerBundle(config, serverId, rooms, secret, 100);
+  const events = buildOwnerBundle(config, serverId, rooms, secret, 100, "Live Guild");
   assert.equal(events.length, 4);
   assert.equal(events[0].kind, 34550);
   assert.ok(events[1].tags.some(function(tag: string[]) { return tag[0] === "d" && String(tag[1]).indexOf("zellous-discover:") === 0; }));
