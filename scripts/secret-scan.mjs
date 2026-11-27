@@ -1,6 +1,8 @@
+import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { extname, join } from "node:path";
+import { isSyntheticSecret, realShapedDiscordToken, syntheticDiscordToken } from "./secret-fixtures.mjs";
 
 const nl = String.fromCharCode(10);
 const patterns = [
@@ -25,6 +27,7 @@ function scanText(text) {
     pattern.regex.lastIndex = 0;
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
+      if (pattern.name === "discord-token" && isSyntheticSecret(match[0])) continue;
       const line = text.slice(0, match.index).split(nl).length;
       findings.push({ pattern: pattern.name, line });
     }
@@ -65,16 +68,21 @@ function selfTest() {
   const dir = ".gm/secret-scan-self-test";
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "token-like.txt");
-  const parts = ["MTIzNDU2Nzg5MDEyMzQ1Njc4OTBhYmNkZWY", "ZmFrZXNpZw", "ZmFrZXNpZ25hdHVyZWxvbmdlbm91Z2h2YWx1ZQ"];
-  writeFileSync(file, "DISCORD_TOKEN=" + parts.join(".") + nl, { mode: 0o600 });
-  const findings = scanText(readFileSync(file, "utf8"));
+  writeFileSync(file, "DISCORD_TOKEN=" + realShapedDiscordToken + nl, { mode: 0o600 });
+  const realFindings = scanText(readFileSync(file, "utf8"));
   rmSync(dir, { recursive: true, force: true });
-  if (findings.length === 0) {
-    console.error("SECRET_SCAN_SELF_TEST FAIL no pattern matched");
-    process.exitCode = 1;
-    return;
-  }
-  console.log("SECRET_SCAN_SELF_TEST PASS patterns=" + findings.map((finding) => finding.pattern).join(","));
+  assert.ok(realFindings.some((finding) => finding.pattern === "discord-token"), "real-shaped token is not detected");
+  assert.equal(isSyntheticSecret(syntheticDiscordToken), true, "synthetic fixture is not provably fake");
+  assert.equal(isSyntheticSecret(realShapedDiscordToken), false, "real-shaped token is classified as synthetic");
+  assert.equal(scanText("token: \"" + syntheticDiscordToken + "\"" + nl).length, 0, "synthetic fixture is treated as a live secret");
+  const patchLine = "+    [base, { ...evidence, token: \"" + realShapedDiscordToken + "\" }]" + nl;
+  assert.ok(scanText(patchLine).some((finding) => finding.pattern === "discord-token"), "real-shaped token in a history patch is not detected");
+  const nearMiss = syntheticDiscordToken.slice(0, -1) + "X";
+  assert.ok(scanText(nearMiss).some((finding) => finding.pattern === "discord-token"), "near-miss synthetic value is not detected");
+  assert.ok(scanText(syntheticDiscordToken + " " + realShapedDiscordToken).some((finding) => finding.pattern === "discord-token"), "allowlist masks a neighbouring live secret");
+  assert.ok(scanText("nsec1" + "q".repeat(32)).some((finding) => finding.pattern === "nsec"), "nsec pattern is weakened");
+  assert.ok(scanText("BRIDGE_PRIVATE_KEY_HEX=" + "0".repeat(64)).some((finding) => finding.pattern === "private-key-hex"), "private-key pattern is weakened");
+  console.log("SECRET_SCAN_SELF_TEST_PASS realShape=detected synthetic=ignored nearMiss=detected patterns=3");
 }
 
 function main() {

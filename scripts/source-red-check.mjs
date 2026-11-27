@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { OWNER_HEX } from "../dist/config.js";
 import { sourceEvidencePath } from "../dist/live/source.js";
 import { findSecretPattern } from "../dist/redaction.js";
+import { syntheticDiscordToken } from "./secret-fixtures.mjs";
+
+const nl = String.fromCharCode(10);
 
 function assertSource(result, evidence, log) {
   assert.equal(result.ok, true, "source-of-truth witness did not pass");
@@ -30,7 +33,7 @@ function selfTest() {
     [{ ...base, surfaces: { ...base.surfaces, browserDom: "Discord Bridge" } }, evidence, "", "stale browser name did not fail"],
     [base, evidence, "Presence: unknown status", "degraded presence did not fail"],
     [base, evidence, "Cannot read properties of null (reading userId)", "nullable presence did not fail"],
-    [base, { ...evidence, token: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTBhYmNkZWY.ZmFrZXNpZw.ZmFrZXNpZ25hdHVyZWxvbmdlbm91Z2h2YWx1ZQ" }, "", "secret value did not fail"]
+    [base, { ...evidence, token: syntheticDiscordToken }, "", "secret value did not fail"]
   ];
   for (const [value, ev, log, label] of cases) {
     let threw = false;
@@ -44,9 +47,7 @@ if (process.argv.includes("--self-test")) selfTest();
 else {
   const result = JSON.parse(readFileSync("data/source-truth.json", "utf8"));
   const evidence = JSON.parse(readFileSync(sourceEvidencePath(), "utf8"));
-  const log = readFileSync("/config/workspace/tmp/zellous-discord/live-service.log", "utf8").split("
-").slice(-500).join("
-");
+  const log = readFileSync("/config/workspace/tmp/zellous-discord/live-service.log", "utf8").split(nl).slice(-500).join(nl);
   assertSource(result, evidence, log);
   console.log("SOURCE_RED_CHECK_PASS name=247420 surfaces=5 stale=0 degradedPresence=0");
 }
