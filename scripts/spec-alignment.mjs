@@ -20,6 +20,9 @@ const needles = [
   "VoiceReflection",
   "text:marker",
   "voice:red-check",
+  "Portal intent approval and relay-set confirmation are not held",
+  "text reflection works with privileged intents off",
+  "two-token DISCORD_VOICE_TOKENS pool remains held",
   "DISCORD_PRIVILEGED_INTENTS=false",
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
   "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
@@ -45,6 +48,9 @@ function selfTest() {
   threw = false;
   try { assertAlignment(all.split("VoiceReflection").join("UnknownReflection")); } catch { threw = true; }
   assert.ok(threw, "voice reflection fact did not fail");
+  threw = false;
+  try { assertAlignment(all.split("Portal intent approval and relay-set confirmation are not held").join("Portal approval is held")); } catch { threw = true; }
+  assert.ok(threw, "held direction did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
 

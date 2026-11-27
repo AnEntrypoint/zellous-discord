@@ -11,7 +11,7 @@ The service uses BRIDGE_PRIVATE_KEY_HEX from the ignored .env for owner-signed p
 
 If DISCORD_VOICE_TOKENS has fewer than two entries, per-user voice reflection is degraded and live voice smoke reports VOICE_POOL_ABSENT. This is an owner credential gap, not a skipped check. Mixed audio is never used as a substitute. /health reports voiceReflectionComplete false and per-user-voice-reflection in degradedFeatures.
 
-Read docs/OPERATOR_RUNBOOK.md before supplying credentials or resuming the final window. It states the exact DISCORD_VOICE_TOKENS shape, privileged intents, per-bot permissions, chosen live relay default, optional ZELLOUS_RELAYS override, token redaction rules and the reason publication is held.
+Read docs/OPERATOR_RUNBOOK.md before supplying credentials or resuming the final window. It states the exact DISCORD_VOICE_TOKENS shape, per-bot permissions, chosen live relay default, optional ZELLOUS_RELAYS override, token redaction rules and the reason only voice acceptance remains held. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off.
 
 ## Owner key for live Discover
 

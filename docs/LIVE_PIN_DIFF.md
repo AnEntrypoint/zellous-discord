@@ -9,7 +9,7 @@ All three pins report wireweave version 0.3.64.
 
 The live Pages nostr-chat import map currently pins wireweave to 5d451241587181e471e263f44db993ba8e2d5764. The live Pages wireweave-bridge still passes state.nostrRelays or the default set wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol, wss://relay.snort.social to createWireweave. The dispatcher chose the live Pages artifact and four-relay default as the bridge source of truth. ZELLOUS_RELAYS is an optional comma-separated override. NOSTR_RELAYS remains a compatibility alias. No owner relay-set confirmation remains.
 
-The spec recorded live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, but a fresh live Pages read on 2026-11-26 resolved to 5d451241587181e471e263f44db993ba8e2d5764. Runtime follows the live Pages artifact. The done section still names the earlier pin, so publication remains held until the dispatcher reconciles that document.
+The spec recorded live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, but a fresh live Pages read on 2026-11-26 resolved to 5d451241587181e471e263f44db993ba8e2d5764. Runtime follows the live Pages artifact. The earlier pin is historical only; docs/SPEC_ALIGNMENT.md records the drift and publication is no longer held for that document.
 
 The Social SDK provisional-account endpoint POST /partner-sdk/token/bot returned HTTP 404 with Discord API code 10002 for this application. Provisional accounts are unavailable, and the dedicated DISCORD_VOICE_TOKENS pool remains required. No mixed-voice fallback is permitted.
 

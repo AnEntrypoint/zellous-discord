@@ -20,7 +20,7 @@ Install every voice bot in guild 367741339393327104 with VIEW_CHANNEL, CONNECT, 
 
 The default Gateway identify payload uses GUILDS 1<<0, GUILD_VOICE_STATES 1<<7, GUILD_MESSAGES 1<<9, GUILD_MESSAGE_REACTIONS and GUILD_MESSAGE_TYPING. Set DISCORD_PRIVILEGED_INTENTS=true only after enabling GUILD_MEMBERS 1<<1, GUILD_PRESENCES 1<<8 and MESSAGE_CONTENT 1<<15 in the Developer Portal.
 
-The privileged intents are GUILD_MEMBERS, GUILD_PRESENCES and MESSAGE_CONTENT. They are opt-in because requesting them without portal approval closes the Gateway with Used disallowed intents. MESSAGE_CONTENT also needs approval after verification. With the switch off, /health reports message-content, presence and member-list enrichment as degraded.
+The privileged intents are GUILD_MEMBERS, GUILD_PRESENCES and MESSAGE_CONTENT. They stay opt-in because requesting them without Developer Portal approval closes the Gateway with Used disallowed intents. Portal approval is not held for the current text path: Discord-origin text reflection works with privileged intents off by using Gateway message IDs plus REST content fetch. With the switch off, /health reports message-content, presence and member-list enrichment as degraded.
 
 ## 4. Relay-set choice
 
@@ -34,23 +34,23 @@ The owner edits /config/workspace/zellous-discord/.env directly and keeps it at 
 
 .env is ignored and excluded from every commit. Secret values are wrapped in SecretString, redacted by the structured logger, scanned in the worktree and git history by scripts/secret-scan.mjs, and omitted from .env.example. The scanner self-test injects a token-like temporary fixture and must fail that scan. A real token-like string appearing in a committed file is a publication-stopping defect.
 
-## 6. Why publication is held
+## 6. Why voice acceptance is held
 
 The final gated witness window zellous-discord-final-3 ended with ZDBRIDGE_DONE 1. Local witnesses passed, historical live reconciliation was accepted by four of six development relays, and live inventory reported discordCount 21, zellousCount 21, no missing rooms and no mismatches. The window stopped at npm run live:voice with VOICE_POOL_INSUFFICIENT because DISCORD_VOICE_TOKENS has no entries in the owner .env. Stage 5 later replaced the development pin and six-relay default with the live Pages pin and four-relay default.
 
-Per the spec red check, a missing token or failed check stops publication. There was no push, no pushed SHA, no git ls-remote origin main agreement and no DONE report. All commits remain local on main. Stage 6 later made privileged enrichment opt-in and started the control-plane bridge with the existing token; /health reports status degraded with the exact degraded feature list.
+The historical voice smoke failure is superseded by credential-ready voice wiring and an honest degraded witness. The only held item is the owner-installed two-token DISCORD_VOICE_TOKENS pool. Portal intent approval and relay-set confirmation are not held. Text reflection works with privileged intents off through Gateway IDs plus REST content fetch. Owner-signed Discover publication and two-way text markers are already witnessed.
 
 ## 7. Dispatcher handoff
 
-After the owner supplies the pool, installs the bots and enables the privileged intents, the dispatcher resumes this peer. No relay-set confirmation is needed. Rerun the final gated witness window on the new tree, fix only failures shown by that window, then push origin main once and quote the push output and git ls-remote origin main. Report DONE only when every done-section condition holds.
+After the owner supplies the two-token DISCORD_VOICE_TOKENS pool and installs both bots, the dispatcher resumes this peer. No portal intent approval and no relay-set confirmation are needed. Rerun the final gated witness window on the new tree, fix only failures shown by that window, then push origin main once and quote the push output and git ls-remote origin main. Report DONE only when every done-section condition holds.
 
 ## 8. Current Stage 6 run status
 
 What works now: control-plane Gateway login with the existing token, non-privileged guild/channel/message/reaction/typing/voice-state events, live Pages pin and four-relay runtime source, read-only live inventory, /health, structured degraded status and token redaction.
 
-What is explicitly degraded: message-content enrichment, presence enrichment, member-list enrichment and per-user voice reflection. The first three become available only after portal approval and DISCORD_PRIVILEGED_INTENTS=true. Per-user voice reflection requires at least two distinct DISCORD_VOICE_TOKENS bot tokens and the final gated window; no mixed-voice fallback is accepted.
+What is explicitly degraded: message-content enrichment, presence enrichment, member-list enrichment and per-user voice reflection. The first three remain opt-in and are not held for text reflection; Discord-origin text reflection works with privileged intents off through Gateway IDs plus REST content fetch. Per-user voice reflection requires at least two distinct DISCORD_VOICE_TOKENS bot tokens and real frames in both directions; no mixed-voice fallback is accepted.
 
-What remains open: owner-supplied voice-token pool, final gated window label zellous-discord-final-4 on tree 8889615 with GATE_TREE=8889615, one push, git ls-remote origin main agreement and DONE. Do not poll for these; the dispatcher resumes when the owner-supplied fact changes.
+What remains open: only the owner-installed two-token DISCORD_VOICE_TOKENS pool, the final gated live window after those credentials exist, and DONE. Portal intent approval, relay-set confirmation and owner key placement are not held. Do not poll for the held credentials; the dispatcher resumes when the owner-supplied fact changes.
 
 ## 9. Reversible new-snapshot reconciliation
 

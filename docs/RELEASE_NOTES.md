@@ -1,8 +1,8 @@
 # RELEASE_NOTES.md
 
-## 2026-11-25: Release candidate held for owner voice credentials
+## 2026-11-25: Release candidate with voice acceptance held
 
-Status: local main is complete through the operator runbook. Publication is held because the live voice smoke requires owner supplied credentials that are still pending.
+Status: local main is complete through the operator runbook. Voice acceptance is held only for the owner-installed two-token DISCORD_VOICE_TOKENS pool. Portal intent approval, relay-set confirmation and owner key placement are not held; owner-signed publication and two-way text reflection are witnessed.
 
 Included in the local tree:
 
@@ -20,17 +20,17 @@ Operator contract:
 - The historical development relay set was wss://relay.primal.net,wss://nos.lol,wss://offchain.pub,wss://nostr-pub.wellorder.net,wss://relay.snort.social,wss://relay.damus.io. Stage 5 replaced it with the live Pages default wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social. ZELLOUS_RELAYS is the optional override; no owner relay-set confirmation remains.
 - Token values stay in .env at mode 600. They are never copied into chat, the spec, a transcript, a log, a report, a commit, a fixture or test output. SecretString, the redacting logger and the secret scanner enforce this.
 
-Publication hold:
+Voice acceptance hold:
 
-The final gated window zellous-discord-final-3 ended ZDBRIDGE_DONE 1 because npm run live:voice failed with VOICE_POOL_INSUFFICIENT. There was no push and no DONE report. The dispatcher should resume after the owner supplies the pool, installs the bots and enables the privileged intents, then rerun the final window and push origin main once. No relay-set confirmation remains.
+The historical final gated window zellous-discord-final-3 ended ZDBRIDGE_DONE 1 because npm run live:voice failed with VOICE_POOL_INSUFFICIENT. That release hold is superseded. Dispatcher resumes only after the owner supplies the two-token DISCORD_VOICE_TOKENS pool and installs both bots. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off.
 
 ## 2026-11-25: Stage 5 live Pages alignment
 
-The bridge now imports the live GitHub Pages wireweave pin 5d451241587181e471e263f44db993ba8e2d5764, uses the live four-relay default wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social, and supports optional ZELLOUS_RELAYS override. NOSTR_RELAYS remains a compatibility alias. The protocol contract records the five changed live-pin files and the added relay, streamId, src, muteMs, unmuteMs, fragment, clipSpliced, relayed and remoteKeys fields. The dispatcher chose the live values; no owner relay-set confirmation remains. The Social SDK provisional-account endpoint is unavailable, so DISCORD_VOICE_TOKENS remains required. Publication is still held only for owner voice tokens; no final window rerun or push occurred in Stage 5.
+The bridge now imports the live GitHub Pages wireweave pin 5d451241587181e471e263f44db993ba8e2d5764, uses the live four-relay default wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social, and supports optional ZELLOUS_RELAYS override. NOSTR_RELAYS remains a compatibility alias. The protocol contract records the five changed live-pin files and the added relay, streamId, src, muteMs, unmuteMs, fragment, clipSpliced, relayed and remoteKeys fields. The dispatcher chose the live values; no owner relay-set confirmation remains. The Social SDK provisional-account endpoint is unavailable, so DISCORD_VOICE_TOKENS remains required. Voice acceptance is held only for the owner-installed two-token voice pool. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off.
 
 ## 2026-11-26: Stage 6 control-plane run with opt-in privileged intents
 
-The control-plane bridge now connects with the existing .env token and guild 367741339393327104. DISCORD_PRIVILEGED_INTENTS defaults to false, so Gateway identify uses only GUILDS, GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_MESSAGE_TYPING and GUILD_VOICE_STATES. Message content, presence and member-list enrichment are explicitly degraded until the owner enables those privileged intents and opts in.
+The control-plane bridge now connects with the existing .env token and guild 367741339393327104. DISCORD_PRIVILEGED_INTENTS defaults to false, so Gateway identify uses only GUILDS, GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_MESSAGE_TYPING and GUILD_VOICE_STATES. Message content, presence and member-list enrichment are explicitly degraded while DISCORD_PRIVILEGED_INTENTS=false. Portal approval is not held for text reflection: Gateway IDs plus REST content fetch make Discord-origin text reflection work with privileged intents off.
 
 Per-user voice reflection remains degraded because DISCORD_VOICE_TOKENS has no entries. /health reports status degraded, degradedFeatures, privilegedIntentsEnabled, gatewayIntents, voiceTokenCount and voiceReflectionComplete=false. No mixed-voice fallback is claimed. Live GitHub Pages remains the runtime source of truth with pin 5d451241587181e471e263f44db993ba8e2d5764 and the four-relay default.
 

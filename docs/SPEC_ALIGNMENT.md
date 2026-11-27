@@ -27,7 +27,7 @@ Owner bundle events are zellous-discover: kind 34550 server metadata with d=disc
 
 Kind 42 chat uses e root SHA-256(serverId + ":" + channelId). Zellous-to-Discord messages strip the room- prefix from roomId before REST calls; Discord-to-Zellous messages use chat.sendTo with the owner server id and channel id. Startup reconciliation and the event-ingest path remain read-only by default so no Discord channel writes occur when the expected snapshot exists.
 
-Publication remains held until the owner places BRIDGE_PRIVATE_KEY_HEX in .env, because owner-signed events cannot be published with a wrong-pubkey listing.
+Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off. Owner-signed events use BRIDGE_PRIVATE_KEY_HEX from the ignored .env and have been published.
 ## Owner-authorized reversible duplicate cleanup alignment
 
 The changed facts checked, architecture, Stage 7, who-owns-what and done sections authorize cleanup of duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup preserves canonical channels, deletes only bridge-created duplicates, reports exact before/after counts and IDs, records cleanup-backup.json and supports cleanup-rollback. destructive cleanup is limited to those duplicates. The final witness window zellous-discord-live-1 includes cleanup:red-check and its self-test.
@@ -35,3 +35,5 @@ The changed facts checked, architecture, Stage 7, who-owns-what and done section
 Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.
 
 owner-authorized reversible duplicate cleanup uses cleanup-backup.json, cleanup-rollback and cleanup:red-check; destructive cleanup is limited to bridge-created duplicates.
+
+Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Portal intent approval and relay-set confirmation are not held. Text reflection works with privileged intents off through Gateway IDs plus REST content fetch; the live four-relay default needs no owner confirmation.
