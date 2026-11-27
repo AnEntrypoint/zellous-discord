@@ -52,7 +52,7 @@ export class BridgeService {
     this.engine = new SyncEngine(this.discord, this.zellous, this.ledger, mapping, this.logger, this.voice!);
     await this.engine.start();
     this.metrics.set("service.started", 1);
-    this.health = new HealthServer(config.healthPort, this.metrics, () => this.snapshot());
+    this.health = new HealthServer(config.healthPort, this.metrics, () => this.snapshot(), (proof) => this.voice?.applyProof(proof));
     await this.health.start();
     const shutdown = () => { void this.stop(); };
     process.once("SIGTERM", shutdown);

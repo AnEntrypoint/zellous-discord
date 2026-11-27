@@ -39,3 +39,5 @@ owner-authorized reversible duplicate cleanup uses cleanup-backup.json, cleanup-
 Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Portal intent approval and relay-set confirmation are not held. Text reflection works with privileged intents off through Gateway IDs plus REST content fetch; the live four-relay default needs no owner confirmation.
 
 One distinct DISCORD_VOICE_TOKENS entry is an insufficient one-identity voice pool. Health and witnesses report voiceTokenCount=1, voicePoolState=insufficient and voiceReadinessReason=VOICE_POOL_INSUFFICIENT, never VOICE_POOL_ABSENT. voiceReflectionComplete stays false and privilegedIntentsEnabled stays false. Only a second distinct installed bot token remains held.
+
+The final gated live window includes voice:proof and voice:proof-red-check. Two distinct installed bot identities must produce real Opus frames in both directions without mixed-audio fallback. Health becomes ok only after voiceReflectionComplete=true, voiceTokenCount=2 and no degraded features remain.

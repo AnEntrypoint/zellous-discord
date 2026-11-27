@@ -44,3 +44,5 @@ Open note: chat-exposed owner key rotation risk remains; the existing key is use
 | Held direction alignment | npm run spec:alignment, npm run spec:red-check | Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off; only the two-token DISCORD_VOICE_TOKENS pool remains held |
 
 | One-token voice readiness | npm run serve:check, npm run intent:guard, npm run live:voice, npm run voice:red-check | voiceTokenCount=1 reports VOICE_POOL_INSUFFICIENT rather than VOICE_POOL_ABSENT; voicePoolState=insufficient; voiceReflectionComplete=false; privilegedIntentsEnabled=false |
+
+| Final voice proof | npm run voice:proof, npm run voice:proof-red-check | Two distinct identities, real Opus frames in both directions, no mixed audio, health ok, voiceReflectionComplete=true, voiceTokenCount=2 and no degraded features |

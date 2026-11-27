@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { Config } from "../config.js";
 import type { Logger } from "../logger.js";
 import type { CanonicalEvent, VoiceFrame } from "../types.js";
@@ -21,14 +23,18 @@ export class VoiceReflection {
   private readonly identities: VoiceIdentityLedger;
   private proof: VoiceProof = emptyVoiceProof();
   private started = false;
+  private readonly proofPath: string;
 
   constructor(private readonly config: Config, private readonly serverId: string, private readonly logger: Logger) {
     this.discordPool = new DiscordVoicePool(config);
     this.identities = new VoiceIdentityLedger(config.bridgeStateDir);
+    this.proofPath = join(config.bridgeStateDir, "voice-proof.json");
+    this.loadProof();
   }
 
   async start(): Promise<void> {
-    if (voiceReadiness(this.config, this.proof).degraded) return;
+    const readiness = voiceReadiness(this.config, this.proof);
+    if (readiness.voicePoolState !== "ready" || !this.config.privilegedIntentsEnabled) return;
     const response = await fetch("https://discord.com/api/v10/guilds/" + this.config.discordGuildId + "/channels", { headers: { Authorization: "Bot " + this.config.discordToken.reveal() }, signal: AbortSignal.timeout(10000) });
     const channels = await response.json() as Array<{ id: string; type: number; name: string }>;
     const voiceChannel = channels.find(function(channel) { return channel.type === 2; });
@@ -77,6 +83,18 @@ export class VoiceReflection {
     this.workers.send(identity, frame);
     this.discordPool.send(identity, frame);
     this.proof = { ...this.proof, frameCount: this.proof.frameCount + 1, zellousToDiscordFrames: this.proof.zellousToDiscordFrames + 1 };
+  }
+
+  loadProof(): void {
+    if (!existsSync(this.proofPath)) return;
+    const value = JSON.parse(readFileSync(this.proofPath, "utf8")) as VoiceProof;
+    this.proof = { ...emptyVoiceProof(), ...value };
+  }
+
+  applyProof(proof: VoiceProof): void {
+    this.proof = { ...emptyVoiceProof(), ...proof };
+    mkdirSync(this.config.bridgeStateDir, { recursive: true, mode: 0o700 });
+    writeFileSync(this.proofPath, JSON.stringify(this.proof), { mode: 0o600 });
   }
 
   readiness() {

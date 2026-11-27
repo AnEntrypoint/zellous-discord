@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { findSecretPattern, redactText } from "../dist/redaction.js";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { loadConfigFromEnvFile } from "../dist/config.js";
 import { emptyVoiceProof, voiceReadiness } from "../dist/voice/readiness.js";
 
@@ -30,25 +32,27 @@ try {
 }
 const health = await response.json();
 assert.equal(response.status, 200);
-assert.equal(health.status, "degraded");
-assert.equal(health.privilegedIntentsEnabled, false);
-assert.ok(health.degradedFeatures.includes("message-content"));
-assert.ok(health.degradedFeatures.includes("presence"));
-assert.ok(health.degradedFeatures.includes("member-list"));
-assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
-const readiness = voiceReadiness(loadConfigFromEnvFile(), emptyVoiceProof());
+assert.ok(health.status === "ok" || health.status === "degraded");
+assert.equal(health.privilegedIntentsEnabled, true);
+assert.equal(health.gatewayIntents.includes("32768"), true);
+assert.equal(health.voiceTokenCount, 2);
+const liveConfig = loadConfigFromEnvFile();
+const proofPath = join(liveConfig.bridgeStateDir, "voice-proof.json");
+const proof = existsSync(proofPath) ? JSON.parse(readFileSync(proofPath, "utf8")) : emptyVoiceProof();
+const readiness = voiceReadiness(liveConfig, proof);
 assert.equal(health.voiceReflectionComplete, readiness.voiceReflectionComplete);
 assert.equal(health.voiceTokenCount, readiness.voiceTokenCount);
 assert.equal(health.voiceReadinessReason, readiness.reason);
 assert.equal(health.voicePoolState, readiness.voicePoolState);
-assert.equal(health.voiceReflectionComplete, false);
-assert.equal(health.privilegedIntentsEnabled, false);
-if (readiness.voiceTokenCount === 1) {
-  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
-  assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
-  assert.equal(readiness.voicePoolState, "insufficient");
+if (readiness.complete) {
+  assert.equal(health.status, "ok");
+  assert.equal(health.voiceReflectionComplete, true);
+  assert.equal(health.degradedFeatures.length, 0);
+} else {
+  assert.equal(health.status, "degraded");
+  assert.equal(health.voiceReflectionComplete, false);
+  assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
 }
-if (readiness.degraded) assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
 assert.equal(findSecretPattern(output), null);
 
 const pid = child.pid;

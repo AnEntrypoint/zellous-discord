@@ -74,3 +74,7 @@ The live text path now maps discord.js Gateway messages into canonical REST-shap
 ## 2026-11-27: One-token voice readiness
 
 One distinct DISCORD_VOICE_TOKENS entry is now reported honestly as voiceTokenCount=1, voicePoolState=insufficient and voiceReadinessReason=VOICE_POOL_INSUFFICIENT. voiceReflectionComplete stays false, DISCORD_PRIVILEGED_INTENTS stays false after the control-plane gateway rejected privileged intents, and health still lists per-user-voice-reflection as degraded. A second distinct installed bot token remains held; voice is not DONE.
+
+## 2026-11-27: Final voice proof path
+
+The live service now accepts a persisted per-user voice proof through /voice-proof. The gated voice proof uses two distinct installed bot identities, encodes real Opus frames, routes Discord-origin frames into the per-worker/Werift path, sends Zellous-origin frames into Discord voice, and rejects mixed audio, missing directions or incomplete health. data/voice-proof.json is mode 600 and health turns ok only after both directions are proven.

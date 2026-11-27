@@ -31,7 +31,7 @@ test("token count alone never proves voice reflection", function() {
 
 test("complete voice requires identities, frames and both directions", function() {
   const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a,token-b" });
-  const readiness = voiceReadiness(config, { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1 });
+  const readiness = voiceReadiness(config, { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1, mixedAudio: false });
   assert.equal(readiness.complete, true);
   assert.equal(readiness.voiceReflectionComplete, true);
 });

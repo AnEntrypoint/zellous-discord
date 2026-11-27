@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { loadConfigFromEnvFile } from "../dist/config.js";
+import { loadConfig, loadConfigFromEnvFile } from "../dist/config.js";
 import { emptyVoiceProof, voiceReadiness } from "../dist/voice/readiness.js";
 import { BridgeEchoStore } from "../dist/sync/echo.js";
 import { VoiceWorkerPool } from "../dist/voice/pool.js";
@@ -63,20 +63,21 @@ function expectThrow(operation, label) {
 function selfTest() {
   expectThrow(function() { assertFrameIsolation(); const router = new AudioRouter(); router.ensure("user-a", "discord-to-zellous"); router.setMuted("user-a", true); assert.equal(router.write(frame("user-a", "discord-to-zellous", 1)), true); }, "muted frame isolation");
   expectThrow(function() { const pool = assertWorkerIsolation(); assert.equal(pool.workerCount(), 1); }, "one identity claiming N users");
-  expectThrow(function() { const config = loadConfigFromEnvFile(); const proof = { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1 }; assert.equal(voiceReadiness(config, proof).complete, true); }, "token-count-only complete claim");
-  expectThrow(function() { const config = loadConfigFromEnvFile(); const readiness = voiceReadiness(config, emptyVoiceProof()); if (readiness.voiceTokenCount === 1) assert.equal(readiness.reason, "VOICE_POOL_ABSENT"); else throw new Error("one-token state missing"); }, "one-token state reported as absent");
+  expectThrow(function() { const config = loadConfigFromEnvFile(); const proof = { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1, mixedAudio: true }; assert.equal(voiceReadiness(config, proof).complete, true); }, "mixed-audio fallback claim");
+  const one = loadConfig({ DISCORD_TOKEN: "control-token", DISCORD_GUILD_ID: "367741339393327104", DISCORD_VOICE_TOKENS: "token-a" });
+  const oneReadiness = voiceReadiness(one, emptyVoiceProof());
+  assert.equal(oneReadiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.notEqual(oneReadiness.reason, "VOICE_POOL_ABSENT");
   console.log("VOICE_RED_CHECK_SELF_TEST_PASS");
 }
 
 if (process.argv.includes("--self-test")) selfTest();
 else {
   const config = loadConfigFromEnvFile();
-  const readiness = assertDegraded(config, emptyVoiceProof());
-  if (readiness.voiceTokenCount === 1) {
-    assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
-    assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
-    assert.equal(readiness.voicePoolState, "insufficient");
-  }
+  const readiness = voiceReadiness(config, emptyVoiceProof());
+  assert.equal(readiness.complete, false);
+  assert.equal(readiness.voiceReflectionComplete, false);
+  assert.equal(readiness.reason, "VOICE_FRAMES_UNPROVEN");
   assertFrameIsolation();
   const pool = assertWorkerIsolation();
   await pool.stopAll();
