@@ -4,7 +4,7 @@ A standalone bidirectional bridge between one Discord guild and one zellous serv
 
 ## Architecture
 
-The service owns a Discord adapter, a wireweave-compatible Nostr adapter, a durable JSONL ledger, a reconciliation engine, a suppression ledger, and per-user voice workers. It imports the live GitHub Pages wireweave pin 5d451241587181e471e263f44db993ba8e2d5764 in Node with injected dependencies, uses the live four-relay default with optional ZELLOUS_RELAYS override, and does not modify the static zellous browser app.
+The service owns a Discord adapter, a wireweave-compatible Nostr adapter, a durable JSONL ledger, a reconciliation engine, a suppression ledger, and per-user voice workers. It imports the live GitHub Pages wireweave pin 8a4a5002d878e6f849068106a92339f0f6be02dc in Node with injected dependencies, uses the live four-relay default with optional ZELLOUS_RELAYS override, and does not modify the static zellous browser app.
 
 Discord guild 367741339393327104 maps to one zellous server. Discord categories, text channels, announcement channels, forums, threads, stages and voice channels map one-to-one to zellous rooms or channels. Canonical envelopes carry source, source ID, operation, version and idempotency key. Replies, replay and echo suppression are ledgered.
 

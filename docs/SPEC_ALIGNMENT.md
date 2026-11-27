@@ -2,8 +2,9 @@
 
 This document maps the changed facts checked, architecture and done sections of /config/workspace/hyperagent/specs/discord-bridge.md into the repository contract on 2026-11-26.
 
-Current live GitHub Pages wireweave pin: 5d451241587181e471e263f44db993ba8e2d5764.
+Current live GitHub Pages wireweave pin: 8a4a5002d878e6f849068106a92339f0f6be02dc.
 Earlier live pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d; it is historical only.
+Previous live pin: 5d451241587181e471e263f44db993ba8e2d5764; it is historical only.
 Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321.
 The six-file protocol drift is reconciled in docs/LIVE_PIN_DIFF.md: src/hub-liveness.js, src/modules/voice-thread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js.
 

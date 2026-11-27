@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const nl = String.fromCharCode(10);
-const livePin = "5d451241587181e471e263f44db993ba8e2d5764";
+const livePin = "8a4a5002d878e6f849068106a92339f0f6be02dc";
+const previousLivePin = "5d451241587181e471e263f44db993ba8e2d5764";
 const devPin = "4508d66ff4cd3fde31959cc8b998810f367be321";
 const liveRelays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol", "wss://relay.snort.social"];
 const liveRelayText = liveRelays.join(",");
@@ -10,6 +11,7 @@ const pagesIndex = "https://anentrypoint.github.io/zellous/nostr-chat/index.html
 const pagesBridge = "https://anentrypoint.github.io/zellous/js/wireweave-bridge.js";
 const changedFiles = ["src/hub-liveness.js", "src/modules/voice-thread.js", "src/vad/clip-filter.js", "src/vad/detector.js", "src/voice-thread-audio.js", "src/voice.js"];
 const allowedDevPinFiles = new Set(["AGENTS.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/SPEC_ALIGNMENT.md", "src/config.ts", "scripts/live-alignment.mjs", "scripts/spec-alignment.mjs", "test/unit/live-alignment.test.ts"]);
+const allowedPreviousPinFiles = new Set(["AGENTS.md", "README.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/RELEASE_NOTES.md", "docs/SPEC_ALIGNMENT.md", "docs/PENDING_VALIDATION.md", "scripts/live-alignment.mjs"]);
 const requiredVoiceFields = ["relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys", "hb", "relays", "hub", "uplinkClass", "presenceLiveMs", "hubLiveness", "linkAlive", "hbAt", "netAt", "jitter", "suspect", "seen", "routeTimer", "routeFor", "myClass", "calmAt", "claim", "cls", "relayMap", "relayTxs"];
 
 function assert(condition, message) {
@@ -50,6 +52,15 @@ function readTracked() {
     result.set(file, readFileSync(file, "utf8"));
   }
   return result;
+}
+
+function assertNoStaleLivePin(files) {
+  const lock = readFileSync("package-lock.json", "utf8");
+  assert(lock.indexOf(previousLivePin) < 0, "stale previous live pin in package-lock.json");
+  for (const [file, text] of files) {
+    if (allowedPreviousPinFiles.has(file)) continue;
+    assert(text.indexOf(previousLivePin) < 0, "stale previous live pin in " + file);
+  }
 }
 
 function assertLiveArtifacts(indexText, bridgeText) {
@@ -115,6 +126,8 @@ function expectThrow(operation, label) {
 function selfTest() {
   const stale = new Map([["package.json", "github:AnEntrypoint/wireweave#" + devPin]]);
   expectThrow(function() { assertNoStaleDevPin(stale); }, "stale development pin");
+  const staleLive = new Map([["src/config.ts", previousLivePin]]);
+  expectThrow(function() { assertNoStaleLivePin(staleLive); }, "stale previous live pin");
   const missingRelay = new Map([
     [".env.example", "NOSTR_RELAYS=wss://relay.damus.io" + nl + "ZELLOUS_RELAYS="],
     ["src/config.ts", "ZELLOUS_RELAYS" + nl + "wss://relay.damus.io"]
@@ -141,6 +154,7 @@ async function main() {
   const bridgeText = await fetchText(pagesBridge);
   assertLiveArtifacts(indexText, bridgeText);
   assertNoStaleDevPin(files);
+  assertNoStaleLivePin(files);
   assertLivePin(files);
   assertRelayDefault(files);
   const changed = protocolChangedFiles(files);
