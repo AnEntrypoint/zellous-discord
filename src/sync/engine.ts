@@ -4,6 +4,7 @@ import type { MappingStore } from "../mapping.js";
 import type { Logger } from "../logger.js";
 import { SuppressionStore } from "./suppression.js";
 import type { VoiceReflection } from "../voice/reflection.js";
+import { discordChannelId } from "../live/source.js";
 import type { ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, Operation, ReconcileResult, RoomRecord, Source } from "../types.js";
 
 function roomKey(room: RoomRecord): string {
@@ -185,7 +186,7 @@ export class SyncEngine {
     if (messageRecord) {
       const nativeChannelId = String(messageRecord.roomId ?? "").replace("room-", "");
       const mappedRoom = targetSource === "zellous" ? this.mapping.getRoomByDiscordId(nativeChannelId) : this.mapping.getRoomByZellousId(messageRecord.roomId);
-      const targetChannelId = targetSource === "zellous" ? "room-" + nativeChannelId : "room-" + (mappedRoom?.discordId ?? (messageRecord.roomId.startsWith("room-") ? messageRecord.roomId.slice(5) : messageRecord.roomId));
+      const targetChannelId = targetSource === "zellous" ? "room-" + nativeChannelId : "room-" + discordChannelId(messageRecord.roomId, room, mappedRoom);
       payload.message = { ...messageRecord, roomId: targetChannelId };
     }
     return createCanonicalEvent({

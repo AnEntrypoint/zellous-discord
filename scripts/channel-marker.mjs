@@ -65,6 +65,14 @@ async function main() {
     return { name, id: String(matches[0].id) };
   });
   assert.notEqual(channels[0].id, channels[1].id, "witness channels are not distinct");
+  const leftover = [];
+  for (const channel of channels) {
+    const prior = await discordRequest("GET", "/channels/" + channel.id + "/messages?limit=50");
+    for (const message of prior) if (String(message.content).includes("zdb-channel-") && String(message.content).includes("[zdb-user-")) await discordRequest("DELETE", "/channels/" + channel.id + "/messages/" + message.id).catch(function() {});
+    const remaining = await discordRequest("GET", "/channels/" + channel.id + "/messages?limit=50");
+    for (const message of remaining) if (String(message.content).includes("zdb-channel-") && String(message.content).includes("[zdb-user-")) leftover.push({ channelId: channel.id, messageId: String(message.id) });
+  }
+  assert.equal(leftover.length, 0, "witness marker left behind");
   const ledger = new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl"));
   const liveRoots = rootChannelMap(serverId, new MappingStore(ledger));
   const markers = channels.map(function(channel) {
@@ -120,7 +128,7 @@ async function main() {
   if (health.voiceReflectionComplete) assert.ok(health.voiceTokenCount >= 2 && health.voiceFrameCount > 0, "degraded voice reflection falsely marked complete");
   const fresh = distFresh();
   assert.equal(fresh, true, "stale dist");
-  const result = { ok: true, serverId, rootSource: "kind42-e-root", channelSource: "discord-rest", channels: reflected, unknownRoot: { root: unknown.root, marker: unknown.marker, relayCount: events.filter(function(event) { return event.content === unknown.marker; }).length, discordPostCount: unknownPosts }, channelCount: after.length, liveServiceCount: lines.length, liveServicePid, voiceReflectionComplete: health.voiceReflectionComplete, voiceTokenCount: health.voiceTokenCount, voiceFrameCount: health.voiceFrameCount, distFresh: fresh, secretFound: false };
+  const result = { ok: true, serverId, rootSource: "kind42-e-root", channelSource: "discord-rest", channels: reflected, unknownRoot: { root: unknown.root, marker: unknown.marker, relayCount: events.filter(function(event) { return event.content === unknown.marker; }).length, discordPostCount: unknownPosts }, leftoverMarkerCount: leftover.length, channelCount: after.length, liveServiceCount: lines.length, liveServicePid, voiceReflectionComplete: health.voiceReflectionComplete, voiceTokenCount: health.voiceTokenCount, voiceFrameCount: health.voiceFrameCount, distFresh: fresh, secretFound: false };
   const output = JSON.stringify(result);
   assert.equal(findSecretPattern(output), null, "secret value in output");
   writeFileSync(join(dir, "channel-marker-result.json"), output, { mode: 0o600 });

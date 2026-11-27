@@ -35,6 +35,7 @@ function assertResult(result) {
   }
   assert.equal(result.unknownRoot.relayCount, 1, "unknown-root marker was not published to relays");
   assert.equal(result.unknownRoot.discordPostCount, 0, "unknown root posted to Discord");
+  assert.equal(result.leftoverMarkerCount ?? 1, 0, "witness marker left behind");
   assert.equal(result.channelCount, 21, "changed channel count");
   assert.equal(result.liveServiceCount, 1, "more than one live service");
   assert.ok(String(result.liveServicePid).length > 0, "missing live service PID");
@@ -48,7 +49,7 @@ function assertResult(result) {
 function selfTest() {
   const serverId = "test-server";
   const channel = function(name, id) { return { name, channelId: id, root: channelHash(serverId, "room-" + id), marker: "zdb-channel-" + name, username: "zdb-user-" + name, discordMessageId: "message-" + name, ownCount: 1, wrongChannelCount: 0 }; };
-  const base = { ok: true, serverId, rootSource: "kind42-e-root", channelSource: "discord-rest", channels: [channel("inference", "1"), channel("warez-and-wonders", "2")], unknownRoot: { root: channelHash(serverId, "room-unknown"), marker: "zdb-unknown-x", relayCount: 1, discordPostCount: 0 }, channelCount: 21, liveServiceCount: 1, liveServicePid: "1", voiceReflectionComplete: false, voiceTokenCount: 2, voiceFrameCount: 0, distFresh: true, secretFound: false };
+  const base = { ok: true, serverId, rootSource: "kind42-e-root", channelSource: "discord-rest", channels: [channel("inference", "1"), channel("warez-and-wonders", "2")], unknownRoot: { root: channelHash(serverId, "room-unknown"), marker: "zdb-unknown-x", relayCount: 1, discordPostCount: 0 }, channelCount: 21, leftoverMarkerCount: 0, liveServiceCount: 1, liveServicePid: "1", voiceReflectionComplete: false, voiceTokenCount: 2, voiceFrameCount: 0, distFresh: true, secretFound: false };
   assertResult(base);
   const cases = [
     [{ ...base, ok: false }, "missing marker did not fail"],
@@ -62,6 +63,7 @@ function selfTest() {
     [{ ...base, unknownRoot: { ...base.unknownRoot, discordPostCount: 1 } }, "unknown root that posts did not fail"],
     [{ ...base, unknownRoot: { ...base.unknownRoot, relayCount: 0 } }, "unknown-root publication missing did not fail"],
     [{ ...base, channelCount: 22 }, "changed channel count did not fail"],
+    [{ ...base, leftoverMarkerCount: 1 }, "marker left behind did not fail"],
     [{ ...base, liveServiceCount: 2 }, "more than one live service did not fail"],
     [{ ...base, distFresh: false }, "stale dist did not fail"],
     [{ ...base, voiceReflectionComplete: true, voiceFrameCount: 0 }, "degraded voice falsely marked complete did not fail"],

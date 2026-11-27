@@ -15,6 +15,14 @@ export function channelRoot(serverId: string, discordId: string): string {
   return channelHash(serverId, "room-" + discordId);
 }
 
+export function discordChannelId(roomId: string, room?: { discordId?: string | null } | null, mappedRoom?: { discordId?: string | null } | null): string {
+  for (const candidate of [room?.discordId, mappedRoom?.discordId]) {
+    const value = String(candidate ?? "");
+    if (/^[0-9]{17,20}$/.test(value)) return value;
+  }
+  return String(roomId ?? "").replace("room-", "");
+}
+
 export function rootChannelMap(serverId: string, mapping: MappingStore): Map<string, string> {
   const result = new Map<string, string>();
   for (const room of mapping.allRooms()) {

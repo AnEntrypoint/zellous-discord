@@ -4,7 +4,7 @@ import { createCanonicalEvent } from "../canonical.js";
 import type { Config } from "../config.js";
 import type { Logger } from "../logger.js";
 import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresenceToPresence, mapGatewayMessageToDiscordLike, mapMessageToDiscordPayload, roomToDiscordCreate, roomToDiscordPatch, stableDiscordVersion, type DiscordChannelLike } from "../mappers.js";
-import { discordMessagePubkey } from "../live/source.js";
+import { discordChannelId, discordMessagePubkey } from "../live/source.js";
 import type { MappingStore } from "../mapping.js";
 import type { BridgeEchoStore } from "../sync/echo.js";
 import type { ActorRef, AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
@@ -24,11 +24,11 @@ export function degradedFeatures(config: Config, readiness?: { complete: boolean
   return features;
 }
 
-function messageChannelId(message: MessageRecord | undefined, mapping?: MappingStore): string {
+function messageChannelId(message: MessageRecord | undefined, mapping: MappingStore | undefined, room: { discordId?: string | null } | null | undefined): string {
   const roomId = String(message?.roomId ?? "");
   const zellousId = roomId.startsWith("room-") ? roomId : null;
   const mapped = zellousId ? mapping?.getRoomByZellousId(zellousId) : undefined;
-  return String(mapped?.discordId ?? roomId.replace("room-", ""));
+  return discordChannelId(roomId, room, mapped);
 }
 
 function bridgeActor() {
@@ -60,6 +60,7 @@ export class DiscordAdapter implements BridgeAdapter {
 
   async apply(event: CanonicalEvent): Promise<ApplyResult> {
     const room = event.payload.room as RoomRecord | undefined;
+    const roomRef = room ?? (event.room as { discordId?: string | null } | null);
     const message = event.payload.message as MessageRecord | undefined;
     if (event.operation === "room.create" || event.operation === "room.upsert") {
       if (room && process.env.ZDBRIDGE_READ_ONLY !== "1") {
@@ -76,16 +77,16 @@ export class DiscordAdapter implements BridgeAdapter {
       if (message) {
         const nonce = "zdb-" + createHash("sha256").update(message.zellousEventId ?? event.sourceId).digest("hex").slice(0, 16);
         this.echo.rememberNonce(nonce);
-        const created = await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping) + "/messages", { ...mapMessageToDiscordPayload(message), nonce }) as { id?: string } | null;
+        const created = await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping, roomRef) + "/messages", { ...mapMessageToDiscordPayload(message), nonce }) as { id?: string } | null;
         if (created?.id) this.echo.rememberDiscord(String(created.id));
       }
     } else if (event.operation === "message.reaction") {
       const reactions = message?.reactions ?? [];
-      for (const reaction of reactions) await discordRequest(this.config, "PUT", "/channels/" + messageChannelId(message, this.mapping) + "/messages/" + reaction.messageId + "/reactions/" + encodeURIComponent(reaction.emoji) + "/@me");
+      for (const reaction of reactions) await discordRequest(this.config, "PUT", "/channels/" + messageChannelId(message, this.mapping, roomRef) + "/messages/" + reaction.messageId + "/reactions/" + encodeURIComponent(reaction.emoji) + "/@me");
     } else if (event.operation === "message.delete") {
-      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + messageChannelId(message, this.mapping) + "/messages/" + message.discordId);
+      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + messageChannelId(message, this.mapping, roomRef) + "/messages/" + message.discordId);
     } else if (event.operation === "message.typing") {
-      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping) + "/typing");
+      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping, roomRef) + "/typing");
     }
     return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: false };
   }
