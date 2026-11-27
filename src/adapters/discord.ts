@@ -107,7 +107,11 @@ export class DiscordAdapter implements BridgeAdapter {
     client.on(Events.MessageDelete, async (message: any) => { await publish(this.messageEvent(message, "message.delete")); });
     client.on(Events.MessageReactionAdd, async (reaction: any) => { await publish(this.reactionEvent(reaction, "message.reaction")); });
     client.on(Events.TypingStart, async (typing: any) => { await publish(this.typingEvent(typing)); });
-    client.on(Events.PresenceUpdate, async (presence: any) => { await publish(this.presenceEvent(presence)); });
+    client.on(Events.PresenceUpdate, async (oldPresence: any, newPresence: any) => {
+      const presence = newPresence ?? oldPresence;
+      if (!presence) return;
+      await publish(this.presenceEvent(presence));
+    });
     client.on(Events.VoiceStateUpdate, async (state: any) => { await publish(this.voiceEvent(state)); });
     client.on(Events.Error, async (error: Error) => { this.logger.error("discord gateway error", { message: error.message }); });
     await client.login(this.config.discordToken.reveal());

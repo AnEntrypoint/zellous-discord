@@ -16,7 +16,7 @@ export const MESSAGE_FIELDS = [
 
 export const PRESENCE_FIELDS = [
   "userId", "status", "custom", "until", "voiceChannelId", "muted", "deafened", "speaking", "lastSeen", "online",
-  "idle", "dnd", "invisible", "offline"
+  "idle", "dnd", "invisible"
 ];
 
 export const VOICE_FIELDS = [

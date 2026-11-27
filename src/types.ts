@@ -133,7 +133,7 @@ export interface MessageRecord {
 
 export interface PresenceRecord {
   userId: string;
-  status: "online" | "idle" | "dnd" | "invisible" | "offline";
+  status: "online" | "idle" | "dnd" | "invisible";
   custom: string;
   until: number;
   voiceChannelId: string | null;

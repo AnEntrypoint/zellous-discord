@@ -330,10 +330,11 @@ export function mapNostrPresenceToPresence(event: Record<string, unknown>): Pres
 }
 
 export function mapDiscordPresenceToPresence(userId: string, status: string, voiceChannelId: string | null, muted: boolean, deafened: boolean): PresenceRecord {
-  const allowed = ["online", "idle", "dnd", "invisible", "offline"];
+  const wireweaveStatuses = ["online", "idle", "dnd", "invisible"];
+  const mapped = status === "offline" ? "invisible" : status;
   return {
     userId,
-    status: (allowed.includes(status) ? status : "online") as PresenceRecord["status"],
+    status: (wireweaveStatuses.includes(mapped) ? mapped : "online") as PresenceRecord["status"],
     custom: "",
     until: 0,
     voiceChannelId,
