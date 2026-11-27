@@ -6,7 +6,9 @@ function assertResult(result) {
   assert.equal(result.ok, true, "missing marker");
   assert.equal(result.root.length, 64, "wrong channel root");
   assert.equal(result.channelCount, 21, "changed channel count");
-  assert.equal(result.privilegedIntentsEnabled, false, "hidden privileged-intent failure");
+  assert.equal(result.privilegedIntentsEnabled, false, "text witness waited for portal approval");
+  assert.equal(result.liveServicePid.length > 0, true, "missing live service PID");
+  assert.equal(result.liveServiceCount ?? 1, 1, "more than one live service");
   assert.ok(result.discordReflectionEventId, "missing Discord-origin relay event");
   assert.ok(result.zellousEventId, "missing Zellous-origin event");
   assert.ok(result.discordMessageId, "missing Discord-origin message");
@@ -17,12 +19,13 @@ function assertResult(result) {
 }
 
 function selfTest() {
-  const base = { ok: true, root: "a".repeat(64), channelCount: 21, privilegedIntentsEnabled: false, discordReflectionEventId: "a", zellousEventId: "b", discordMessageId: "c", discordMarker: "zdb-discord-x", zellousMarker: "zdb-zellous-x" };
+  const base = { ok: true, root: "a".repeat(64), channelCount: 21, privilegedIntentsEnabled: false, discordReflectionEventId: "a", zellousEventId: "b", discordMessageId: "c", discordMarker: "zdb-discord-x", zellousMarker: "zdb-zellous-x", liveServicePid: "1", liveServiceCount: 1 };
   const cases = [
     [{ ...base, ok: false }, "missing marker"],
     [{ ...base, root: "wrong" }, "wrong channel root"],
     [{ ...base, channelCount: 22 }, "changed channel count"],
-    [{ ...base, privilegedIntentsEnabled: true }, "hidden privileged-intent failure"],
+    [{ ...base, privilegedIntentsEnabled: true }, "text witness waited for portal approval"],
+    [{ ...base, liveServiceCount: 2 }, "more than one live service"],
     [{ ...base, duplicateCount: 1 }, "duplicate or echoed message"],
     [{ ...base, secretFound: true }, "secret value in output"]
   ];

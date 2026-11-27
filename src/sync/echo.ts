@@ -5,6 +5,7 @@ interface EchoState {
   discordIds: string[];
   zellousIds: string[];
   nonces: string[];
+  discordSeen: string[];
 }
 
 export class BridgeEchoStore {
@@ -12,18 +13,20 @@ export class BridgeEchoStore {
   private discordIds: Set<string>;
   private zellousIds: Set<string>;
   private nonces: Set<string>;
+  private discordSeen: Set<string>;
 
   constructor(stateDir: string) {
     mkdirSync(stateDir, { recursive: true, mode: 0o700 });
     this.path = join(stateDir, "bridge-echoes.json");
-    const state = existsSync(this.path) ? JSON.parse(readFileSync(this.path, "utf8")) as EchoState : { discordIds: [], zellousIds: [], nonces: [] };
+    const state = existsSync(this.path) ? JSON.parse(readFileSync(this.path, "utf8")) as EchoState : { discordIds: [], zellousIds: [], nonces: [], discordSeen: [] };
     this.discordIds = new Set(state.discordIds ?? []);
     this.zellousIds = new Set(state.zellousIds ?? []);
     this.nonces = new Set(state.nonces ?? []);
+    this.discordSeen = new Set(state.discordSeen ?? []);
   }
 
   private persist(): void {
-    const state: EchoState = { discordIds: [...this.discordIds], zellousIds: [...this.zellousIds], nonces: [...this.nonces] };
+    const state: EchoState = { discordIds: [...this.discordIds], zellousIds: [...this.zellousIds], nonces: [...this.nonces], discordSeen: [...this.discordSeen] };
     writeFileSync(this.path, JSON.stringify(state), { mode: 0o600 });
   }
 
@@ -57,7 +60,17 @@ export class BridgeEchoStore {
     return this.nonces.has(nonce);
   }
 
-  counts(): { discordIds: number; zellousIds: number; nonces: number } {
-    return { discordIds: this.discordIds.size, zellousIds: this.zellousIds.size, nonces: this.nonces.size };
+  rememberDiscordSeen(id: string): void {
+    if (!id) return;
+    this.discordSeen.add(id);
+    this.persist();
+  }
+
+  isDiscordSeen(id: string): boolean {
+    return this.discordSeen.has(id);
+  }
+
+  counts(): { discordIds: number; zellousIds: number; nonces: number; discordSeen: number } {
+    return { discordIds: this.discordIds.size, zellousIds: this.zellousIds.size, nonces: this.nonces.size, discordSeen: this.discordSeen.size };
   }
 }

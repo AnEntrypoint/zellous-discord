@@ -100,8 +100,8 @@ export class DiscordAdapter implements BridgeAdapter {
     client.on(Events.ChannelCreate, async (channel: any) => { await publish(this.channelEvent(channel, "room.create")); });
     client.on(Events.ChannelUpdate, async (channel: any) => { await publish(this.channelEvent(channel, "room.rename")); });
     client.on(Events.ChannelDelete, async (channel: any) => { await publish(this.channelEvent(channel, "room.delete")); });
-    client.on(Events.MessageCreate, async (message: any) => { if (this.isBridgeEcho(message)) return; await publish(this.messageEvent(message, "message.create")); });
-    client.on(Events.MessageUpdate, async (message: any) => { await publish(this.messageEvent(message, "message.correction")); });
+    client.on(Events.MessageCreate, async (message: any) => { await this.publishGatewayMessage(message, "message.create", publish); });
+    client.on(Events.MessageUpdate, async (message: any) => { await this.publishGatewayMessage(message, "message.correction", publish); });
     client.on(Events.MessageDelete, async (message: any) => { await publish(this.messageEvent(message, "message.delete")); });
     client.on(Events.MessageReactionAdd, async (reaction: any) => { await publish(this.reactionEvent(reaction, "message.reaction")); });
     client.on(Events.TypingStart, async (typing: any) => { await publish(this.typingEvent(typing)); });
@@ -138,8 +138,27 @@ export class DiscordAdapter implements BridgeAdapter {
   private isBridgeEcho(message: any): boolean {
     const id = String(message.id ?? "");
     const nonce = String(message.nonce ?? "");
-    const authorId = String(message.author?.id ?? "");
-    return this.echo.isDiscord(id) || this.echo.isNonce(nonce) || nonce.startsWith("zdb-") || (Boolean(message.author?.bot) && authorId === String(this.client?.user?.id ?? ""));
+    return this.echo.isDiscord(id) || this.echo.isNonce(nonce) || nonce.startsWith("zdb-");
+  }
+
+  private async fetchMessageContent(channelId: string, messageId: string): Promise<string> {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const fetched = await discordRequest(this.config, "GET", "/channels/" + channelId + "/messages/" + messageId) as { content?: string } | null;
+      const content = String(fetched?.content ?? "");
+      if (content) return content;
+      await new Promise<void>((resolve) => setTimeout(resolve, 250));
+    }
+    return "";
+  }
+
+  private async publishGatewayMessage(message: any, operation: "message.create" | "message.correction", publish: (event: CanonicalEvent) => Promise<void>): Promise<void> {
+    const id = String(message.id ?? "");
+    if (!id || this.isBridgeEcho(message) || this.echo.isDiscordSeen(id)) return;
+    const channelId = String(message.channelId ?? message.channel?.id ?? "");
+    const content = String(message.content ?? "") || await this.fetchMessageContent(channelId, id);
+    if (!content) return;
+    this.echo.rememberDiscordSeen(id);
+    await publish(this.messageEvent({ ...message, id, channelId, content }, operation));
   }
 
   private messageEvent(message: any, operation: "message.create" | "message.correction" | "message.delete"): CanonicalEvent {

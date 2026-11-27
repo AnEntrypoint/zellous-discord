@@ -132,7 +132,8 @@ export class NostrAdapter implements BridgeAdapter {
   private messageEvent(detail: any, operation: "message.create"): CanonicalEvent {
     const raw = detail.message ?? detail.list?.at?.(-1) ?? {};
     const eventId = String(raw.id ?? "messages");
-    if (this.echo.isZellous(eventId) || (raw.userId && raw.userId === this.publicKey)) return this.suppressedEvent(eventId, operation);
+    const tags = (raw.tags ?? []) as string[];
+    if (this.echo.isZellous(eventId) || tags.includes("zdb-bridge")) return this.suppressedEvent(eventId, operation);
     const zellousChannelId = String(this.ww.currentChannelId ?? this.ww.chat.activeChannelId ?? "");
     const discordId = this.canonicalDiscordChannelId(zellousChannelId);
     const message: MessageRecord = {
@@ -154,6 +155,7 @@ export class NostrAdapter implements BridgeAdapter {
       deleted: false,
       contentVersion: 1
     };
+    if (!message.content) return this.suppressedEvent(eventId, operation);
     return createCanonicalEvent({
       schemaVersion: 1,
       source: this.source,

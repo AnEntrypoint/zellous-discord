@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { SimplePool } from "nostr-tools";
 import { useWebSocketImplementation } from "nostr-tools/pool";
 import { loadConfigFromEnvFile } from "../dist/config.js";
@@ -37,6 +38,9 @@ async function relayEvents(content) {
 }
 
 async function main() {
+  const processLines = execFileSync("ps", ["-eo", "pid,args"], { encoding: "utf8" }).split(String.fromCharCode(10)).filter(function(line) { return line.indexOf("dist/cli.js serve") >= 0; });
+  assert.equal(processLines.length, 1, "more than one live service");
+  const liveServicePid = String(processLines[0].trim().split(/\s+/)[0]);
   const before = await discordRequest("GET", "/guilds/" + config.discordGuildId + "/channels");
   const beforeCount = before.length;
   const created = await discordRequest("POST", "/channels/" + channelId + "/messages", { content: discordMarker, allowed_mentions: { parse: [] } });
@@ -66,7 +70,7 @@ async function main() {
   const healthJson = await health.json();
   assert.equal(healthJson.privilegedIntentsEnabled, false, "privileged intents unexpectedly enabled");
   assert.ok(healthJson.degradedFeatures.includes("message-content"), "hidden privileged-intent failure");
-  const result = { ok: true, serverId, channelId, zellousChannelId, root, discordMarker, zellousMarker, discordReflectionEventId: discordReflection[0].id, zellousEventId: zellous.eventId, discordMessageId: created.id, channelCount: afterCount, privilegedIntentsEnabled: false };
+  const result = { ok: true, serverId, channelId, zellousChannelId, root, discordMarker, zellousMarker, discordReflectionEventId: discordReflection[0].id, zellousEventId: zellous.eventId, discordMessageId: created.id, channelCount: afterCount, privilegedIntentsEnabled: false, liveServicePid, liveServiceCount: processLines.length, duplicateCount: discordReflection.length + zellousInDiscord.length - 2, secretFound: false };
   const output = JSON.stringify(result);
   assert.equal(findSecretPattern(output), null, "secret value in output");
   writeFileSync(join(dir, "text-marker-result.json"), output, { mode: 0o600 });
