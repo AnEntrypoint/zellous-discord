@@ -42,3 +42,7 @@ Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Porta
 One distinct DISCORD_VOICE_TOKENS entry is an insufficient one-identity voice pool. Health and witnesses report voiceTokenCount=1, voicePoolState=insufficient and voiceReadinessReason=VOICE_POOL_INSUFFICIENT, never VOICE_POOL_ABSENT. voiceReflectionComplete stays false and privilegedIntentsEnabled stays false. Only a second distinct installed bot token remains held.
 
 The active acceptance claim is stopped. The distinct installed voice identity is held; voice:proof is not part of the green window until two distinct installed identities exist.
+
+## Stage 5 per-channel routing alignment
+
+Zellous-origin chat resolves its Discord target from the kind 42 e root, not from wireweave's active UI channel. channel:marker derives inference and warez-and-wonders from live Discord REST, proves each canonical root equals SHA-256(serverId:room-channelId), posts one unique marker per channel, and fails on a wrong-channel marker, a duplicated marker, an active-UI channel fallback or an unknown root that posts. channel-root:red-check verifies both roots against the live ledger. The active acceptance claim remains stopped and the distinct installed voice identity is held.

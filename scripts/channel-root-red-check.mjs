@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
-import { REQUIRED_SERVER_ID } from "../dist/config.js";
-import { channelHash } from "../dist/nostr.js";
-import { channelRoot, rootChannelMap } from "../dist/live/source.js";
-import { mapZellousChannelToRoom } from "../dist/mappers.js";
-import { loadConfigFromEnvFile } from "../dist/config.js";
-import { Ledger } from "../dist/ledger.js";
-import { MappingStore } from "../dist/mapping.js";
 import { join } from "node:path";
+import { loadConfigFromEnvFile, REQUIRED_SERVER_ID } from "../dist/config.js";
+import { channelRoot, rootChannelMap } from "../dist/live/source.js";
+import { Ledger } from "../dist/ledger.js";
+import { mapZellousChannelToRoom } from "../dist/mappers.js";
+import { MappingStore } from "../dist/mapping.js";
+import { channelHash } from "../dist/nostr.js";
+import { createDiscordRequest } from "./discord-rest.mjs";
 
-function roomFor(channelId) {
-  return mapZellousChannelToRoom({ id: "room-" + channelId, name: "inference", type: "text" }, REQUIRED_SERVER_ID, "367741339393327104");
+const names = ["inference", "warez-and-wonders"];
+
+function roomFor(name, channelId) {
+  return mapZellousChannelToRoom({ id: "room-" + channelId, name, type: "text" }, REQUIRED_SERVER_ID, "367741339393327104");
 }
 
 function assertRoot(room, channelId) {
@@ -19,42 +21,59 @@ function assertRoot(room, channelId) {
   const canonicalRoots = rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [room, cross] });
   assert.equal(canonicalRoots.get(channelRoot(REQUIRED_SERVER_ID, channelId)), channelId, "cross-channel room overrode canonical root");
   assert.equal(room.discordId, channelId, "Zellous room missing Discord source ID");
-  const mapping = { allRooms: () => [room] };
-  const roots = rootChannelMap(REQUIRED_SERVER_ID, mapping);
+  const roots = rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [room] });
   assert.ok(roots.size > 0, "root map empty");
   assert.equal(roots.get(channelHash(REQUIRED_SERVER_ID, "room-" + channelId)), channelId, "wrong channel root");
   assert.equal(roots.get(channelRoot(REQUIRED_SERVER_ID, channelId)), channelId, "wrong channel root helper");
 }
 
-function assertLiveLedgerRoot() {
-  const config = loadConfigFromEnvFile();
-  const ledger = new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl"));
-  const mapping = new MappingStore(ledger);
-  const roots = rootChannelMap(REQUIRED_SERVER_ID, mapping);
-  const channelId = "805320534370943016";
-  assert.equal(roots.get(channelRoot(REQUIRED_SERVER_ID, channelId)), channelId, "live ledger root map missing Discord channel");
+function assertLiveRoots(roots, ids) {
+  const inference = ids.get("inference");
+  const warez = ids.get("warez-and-wonders");
+  assert.ok(inference && warez, "missing live channel ID");
+  assert.notEqual(inference, warez, "witness channels are not distinct");
+  for (const [name, id] of ids) {
+    assert.equal(roots.get(channelRoot(REQUIRED_SERVER_ID, id)), id, "live ledger root missing: " + name);
+    assert.equal(roots.get(channelHash(REQUIRED_SERVER_ID, "room-" + id)), id, "live ledger hash missing: " + name);
+  }
+  assert.notEqual(roots.get(channelRoot(REQUIRED_SERVER_ID, inference)), warez, "cross-channel root override");
 }
 
 function selfTest() {
-  const channelId = "805320534370943016";
-  const missing = { ...roomFor(channelId), discordId: null };
+  const ids = new Map([["inference", "1073958855979057162"], ["warez-and-wonders", "805320534370943016"]]);
+  const roots = rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [roomFor("inference", ids.get("inference")), roomFor("warez-and-wonders", ids.get("warez-and-wonders"))] });
+  assertLiveRoots(roots, ids);
   let threw = false;
-  try { assertRoot(missing, channelId); } catch { threw = true; }
+  try { assertRoot({ ...roomFor("inference", ids.get("inference")), discordId: null }, ids.get("inference")); } catch { threw = true; }
   assert.ok(threw, "missing Discord source ID did not fail");
-  const wrong = { ...roomFor(channelId), discordId: "999999999999999999" };
   threw = false;
-  try { assertRoot(wrong, channelId); } catch { threw = true; }
+  try { assertRoot({ ...roomFor("inference", ids.get("inference")), discordId: "999999999999999999" }, ids.get("inference")); } catch { threw = true; }
   assert.ok(threw, "wrong Discord source ID did not fail");
   threw = false;
   try { assert.equal(rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [] }).size, 1, "empty root map did not fail"); } catch { threw = true; }
   assert.ok(threw, "empty live ledger root map did not fail");
-  console.log("CHANNEL_ROOT_RED_CHECK_SELF_TEST_PASS");
+  threw = false;
+  try { assertLiveRoots(new Map([[channelRoot(REQUIRED_SERVER_ID, ids.get("inference")), ids.get("warez-and-wonders")]]), ids); } catch { threw = true; }
+  assert.ok(threw, "cross-channel root override did not fail");
+  console.log("CHANNEL_ROOT_RED_CHECK_SELF_TEST_PASS channels=2");
+}
+
+async function main() {
+  const config = loadConfigFromEnvFile();
+  const discordRequest = createDiscordRequest(config);
+  const channels = await discordRequest("GET", "/guilds/" + config.discordGuildId + "/channels");
+  const ids = new Map();
+  for (const name of names) {
+    const matches = channels.filter(function(channel) { return channel.type === 0 && channel.name === name; });
+    assert.equal(matches.length, 1, "Discord channel missing or duplicated: " + name);
+    ids.set(name, String(matches[0].id));
+  }
+  const mapping = new MappingStore(new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl")));
+  const roots = rootChannelMap(REQUIRED_SERVER_ID, mapping);
+  for (const [name, id] of ids) assertRoot(roomFor(name, id), id);
+  assertLiveRoots(roots, ids);
+  console.log("CHANNEL_ROOT_RED_CHECK_PASS channels=" + names.join(","));
 }
 
 if (process.argv.includes("--self-test")) selfTest();
-else {
-  const channelId = "805320534370943016";
-  assertRoot(roomFor(channelId), channelId);
-  assertLiveLedgerRoot();
-  console.log("CHANNEL_ROOT_RED_CHECK_PASS channelId=" + channelId);
-}
+else await main();
