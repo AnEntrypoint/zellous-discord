@@ -188,8 +188,8 @@ export class NostrAdapter implements BridgeAdapter {
   }
 
   private async publishMessage(message: MessageRecord): Promise<void> {
-    const room = this.mapping.getRoomByDiscordId(message.roomId.replace("room-", ""));
-    const zellousChannelId = room?.zellousId ?? message.roomId;
+    const discordId = message.roomId.replace("room-", "");
+    const zellousChannelId = "room-" + discordId;
     const signed = await this.ww.auth.sign({ kind: 42, created_at: Math.floor(Date.now() / 1000), tags: [["e", channelHash(this.serverId, zellousChannelId), "", "root"], ["t", "zdb-bridge"]], content: message.content });
     this.echo.rememberZellous(String(signed.id));
     this.ww.pool.publish(signed);

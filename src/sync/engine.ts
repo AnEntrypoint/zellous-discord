@@ -185,7 +185,7 @@ export class SyncEngine {
     if (messageRecord) {
       const nativeChannelId = String(messageRecord.roomId ?? "").replace("room-", "");
       const mappedRoom = targetSource === "zellous" ? this.mapping.getRoomByDiscordId(nativeChannelId) : this.mapping.getRoomByZellousId(messageRecord.roomId);
-      const targetChannelId = targetSource === "zellous" ? (mappedRoom?.zellousId ?? messageRecord.roomId) : "room-" + (mappedRoom?.discordId ?? (messageRecord.roomId.startsWith("room-") ? messageRecord.roomId.slice(5) : messageRecord.roomId));
+      const targetChannelId = targetSource === "zellous" ? "room-" + nativeChannelId : "room-" + (mappedRoom?.discordId ?? (messageRecord.roomId.startsWith("room-") ? messageRecord.roomId.slice(5) : messageRecord.roomId));
       payload.message = { ...messageRecord, roomId: targetChannelId };
     }
     return createCanonicalEvent({
