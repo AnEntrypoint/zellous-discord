@@ -3,6 +3,7 @@ import type { Ledger } from "../ledger.js";
 import type { MappingStore } from "../mapping.js";
 import type { Logger } from "../logger.js";
 import { SuppressionStore } from "./suppression.js";
+import type { VoiceReflection } from "../voice/reflection.js";
 import type { ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, Operation, ReconcileResult, RoomRecord, Source } from "../types.js";
 
 function roomKey(room: RoomRecord): string {
@@ -17,7 +18,7 @@ export class SyncEngine {
   private readonly suppression: SuppressionStore;
   private unsubscribers: Array<() => Promise<void>> = [];
 
-  constructor(private readonly discord: BridgeAdapter, private readonly zellous: BridgeAdapter, private readonly ledger: Ledger, private readonly mapping: MappingStore, private readonly logger: Logger) {
+  constructor(private readonly discord: BridgeAdapter, private readonly zellous: BridgeAdapter, private readonly ledger: Ledger, private readonly mapping: MappingStore, private readonly logger: Logger, private readonly voice: VoiceReflection | null = null) {
     this.suppression = new SuppressionStore(ledger);
   }
 
@@ -49,6 +50,8 @@ export class SyncEngine {
     }
     const appended = this.ledger.appendEvent(event, event.operation);
     if (appended.duplicate) return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: true };
+    if (this.voice && event.operation.startsWith("voice.")) await this.voice.ingest(event);
+    if (event.payload.suppressed === true) return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: true };
     const target = origin === "discord" ? this.zellous : this.discord;
     const translated = this.translateEvent(event, target.source);
     if (process.env.ZDBRIDGE_READ_ONLY === "1" && target.source === "discord" && event.operation.startsWith("room.")) {
@@ -167,6 +170,7 @@ export class SyncEngine {
 
   private translateEvent(event: CanonicalEvent, targetSource: Source): CanonicalEvent {
     const roomRecord = event.payload.room as RoomRecord | undefined;
+    const messageRecord = event.payload.message as MessageRecord | undefined;
     const room = event.room ? { ...event.room } : null;
     let sourceId = event.sourceId;
     if (room && roomRecord) {
@@ -178,6 +182,12 @@ export class SyncEngine {
     }
     const payload = { ...event.payload };
     if (roomRecord) payload.room = { ...roomRecord, discordId: roomRecord.discordId ?? roomRecord.zellousId ?? roomRecord.roomId, zellousId: roomRecord.zellousId ?? roomRecord.discordId ?? roomRecord.roomId };
+    if (messageRecord) {
+      const nativeChannelId = String(messageRecord.roomId ?? "").replace("room-", "");
+      const mappedRoom = targetSource === "zellous" ? this.mapping.getRoomByDiscordId(nativeChannelId) : this.mapping.getRoomByZellousId(messageRecord.roomId);
+      const targetChannelId = targetSource === "zellous" ? (mappedRoom?.zellousId ?? messageRecord.roomId) : "room-" + (mappedRoom?.discordId ?? (messageRecord.roomId.startsWith("room-") ? messageRecord.roomId.slice(5) : messageRecord.roomId));
+      payload.message = { ...messageRecord, roomId: targetChannelId };
+    }
     return createCanonicalEvent({
       schemaVersion: event.schemaVersion,
       source: targetSource,

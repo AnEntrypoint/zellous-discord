@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+function assertResult(result) {
+  assert.equal(result.ok, true, "missing marker");
+  assert.equal(result.root.length, 64, "wrong channel root");
+  assert.equal(result.channelCount, 21, "changed channel count");
+  assert.equal(result.privilegedIntentsEnabled, false, "hidden privileged-intent failure");
+  assert.ok(result.discordReflectionEventId, "missing Discord-origin relay event");
+  assert.ok(result.zellousEventId, "missing Zellous-origin event");
+  assert.ok(result.discordMessageId, "missing Discord-origin message");
+  assert.equal(result.discordMarker.startsWith("zdb-discord-"), true, "missing Discord marker");
+  assert.equal(result.zellousMarker.startsWith("zdb-zellous-"), true, "missing Zellous marker");
+  assert.equal(result.duplicateCount ?? 0, 0, "duplicate or echoed message");
+  assert.equal(result.secretFound ?? false, false, "secret value in output");
+}
+
+function selfTest() {
+  const base = { ok: true, root: "a".repeat(64), channelCount: 21, privilegedIntentsEnabled: false, discordReflectionEventId: "a", zellousEventId: "b", discordMessageId: "c", discordMarker: "zdb-discord-x", zellousMarker: "zdb-zellous-x" };
+  const cases = [
+    [{ ...base, ok: false }, "missing marker"],
+    [{ ...base, root: "wrong" }, "wrong channel root"],
+    [{ ...base, channelCount: 22 }, "changed channel count"],
+    [{ ...base, privilegedIntentsEnabled: true }, "hidden privileged-intent failure"],
+    [{ ...base, duplicateCount: 1 }, "duplicate or echoed message"],
+    [{ ...base, secretFound: true }, "secret value in output"]
+  ];
+  for (const [value, label] of cases) {
+    let threw = false;
+    try { assertResult(value); } catch { threw = true; }
+    assert.ok(threw, label + " did not fail");
+  }
+  console.log("TEXT_RED_CHECK_SELF_TEST_PASS");
+}
+
+if (process.argv.includes("--self-test")) selfTest();
+else {
+  const scratch = process.env.HYPERAGENT_SCRATCH || "/config/workspace/tmp";
+  const result = JSON.parse(readFileSync(join(scratch, "zellous-discord", "text-marker-result.json"), "utf8"));
+  assertResult(result);
+  console.log("TEXT_RED_CHECK_PASS root=" + result.root + " channelCount=" + String(result.channelCount));
+}

@@ -78,3 +78,9 @@ The rules channel uses room type page and is bridge-owned. It is excluded from t
 ## Owner-authorized reversible duplicate cleanup
 
 Canonical Discord channels are selected by creation time before 2026-11-01. Bridge-created duplicate channels are selected by creation time on or after 2026-11-01 and must share a name with a canonical channel. Cleanup signs one owner-author kind 30078 channel snapshot with canonical channels plus one type:page rules channel, signs kind 5 deletion requests for older duplicate channel-snapshot events, writes cleanup-backup.json and deletes only those bridge-created duplicate Discord IDs. cleanup-rollback republishes the previous snapshot content and recreates the deleted channels with new Discord IDs.
+
+## Live two-way text reflection
+
+Discord Gateway MessageCreate uses createdTimestamp, editedTimestamp, reference, mentions and attachment collections; it is mapped to a canonical message with native Discord id, stable snowflake version and roomId "room-" + channelId. Wireweave emits a per-new-message "message" event whose object lacks roomId; the adapter derives channel context from active wireweave state and MappingStore, then delivers a canonical message with roomId "room-" + canonical Discord channel id. Bridge-origin messages carry a zdb nonce on Discord and a zdb-bridge tag on kind 42; their native IDs are persisted in data/bridge-echoes.json and suppressed on ingress. Read-only mode still blocks Discord-target room operations only.
+
+Stage 2 uses BridgeEchoStore, text:marker and text:red-check; Stage 3 uses VoiceReflection, voice:red-check and honest zero-token degradation.

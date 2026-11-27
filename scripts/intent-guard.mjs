@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { loadConfig } from "../dist/config.js";
 import { BASE_INTENTS, PRIVILEGED_INTENTS, degradedFeatures, gatewayIntents } from "../dist/adapters/discord.js";
+import { emptyVoiceProof, voiceReadiness } from "../dist/voice/readiness.js";
 
 const base = {
   DISCORD_TOKEN: "control-token",
@@ -24,8 +25,9 @@ function assertDegradedFeatures(features) {
   for (const feature of ["message-content", "presence", "member-list", "per-user-voice-reflection"]) assert.ok(features.includes(feature), "hidden degradation " + feature);
 }
 
-function assertVoiceClaim(features, voiceReflectionComplete) {
-  if (features.includes("per-user-voice-reflection")) assert.equal(voiceReflectionComplete, false, "claimed complete voice reflection without a voice pool");
+function assertVoiceClaim(features, readiness) {
+  if (features.includes("per-user-voice-reflection")) assert.equal(readiness.voiceReflectionComplete, false, "claimed complete voice reflection without a voice pool");
+  assert.equal(readiness.complete, false, "zero-token readiness must stay incomplete");
 }
 
 function assertHealth(health) {
@@ -46,7 +48,7 @@ function expectThrow(operation, label) {
 function selfTest() {
   expectThrow(function() { assertNoPrivilegedIntents([...BASE_INTENTS, ...PRIVILEGED_INTENTS], "default"); }, "disallowed-intent gateway close");
   expectThrow(function() { assertDegradedFeatures(["message-content"]); }, "hidden degradation");
-  expectThrow(function() { assertVoiceClaim(["per-user-voice-reflection"], true); }, "voice reflection claim without pool");
+  expectThrow(function() { assertVoiceClaim(["per-user-voice-reflection"], { complete: true, voiceReflectionComplete: true }); }, "voice reflection claim without pool");
   expectThrow(function() { assertHealth({ status: "ok", privilegedIntentsEnabled: true, degradedFeatures: [], voiceReflectionComplete: true, voiceTokenCount: 2 }); }, "hidden health degradation");
   console.log("INTENT_GUARD_SELF_TEST_PASS");
 }
@@ -66,10 +68,11 @@ function main() {
   assert.equal(optIn.privilegedIntentsEnabled, true);
   assertOptInPrivilegedIntents(gatewayIntents(optIn));
 
-  const features = degradedFeatures(defaultConfig);
+  const readiness = voiceReadiness(defaultConfig, emptyVoiceProof());
+  const features = degradedFeatures(defaultConfig, readiness);
   assertDegradedFeatures(features);
-  assertVoiceClaim(features, false);
-  assertHealth({ status: "degraded", privilegedIntentsEnabled: false, degradedFeatures: features, voiceReflectionComplete: false, voiceTokenCount: 0 });
+  assertVoiceClaim(features, readiness);
+  assertHealth({ status: "degraded", privilegedIntentsEnabled: false, degradedFeatures: features, voiceReflectionComplete: readiness.voiceReflectionComplete, voiceTokenCount: readiness.voiceTokenCount });
   console.log("INTENT_GUARD_PASS baseIntents=" + String(BASE_INTENTS.length) + " privilegedIntents=" + String(PRIVILEGED_INTENTS.length) + " degraded=" + features.join(","));
 }
 

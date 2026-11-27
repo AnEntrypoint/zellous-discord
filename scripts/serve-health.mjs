@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { findSecretPattern, redactText } from "../dist/redaction.js";
+import { loadConfigFromEnvFile } from "../dist/config.js";
+import { emptyVoiceProof, voiceReadiness } from "../dist/voice/readiness.js";
 
 function findSecretPatternName(value) {
   return redactText(value);
@@ -34,8 +36,11 @@ assert.ok(health.degradedFeatures.includes("message-content"));
 assert.ok(health.degradedFeatures.includes("presence"));
 assert.ok(health.degradedFeatures.includes("member-list"));
 assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
-assert.equal(health.voiceReflectionComplete, false);
-assert.equal(health.voiceTokenCount, 0);
+const readiness = voiceReadiness(loadConfigFromEnvFile(), emptyVoiceProof());
+assert.equal(health.voiceReflectionComplete, readiness.voiceReflectionComplete);
+assert.equal(health.voiceTokenCount, readiness.voiceTokenCount);
+assert.equal(health.voiceReadinessReason, readiness.reason);
+if (readiness.degraded) assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
 assert.equal(findSecretPattern(output), null);
 
 const pid = child.pid;

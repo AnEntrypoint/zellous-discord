@@ -202,6 +202,26 @@ export function roomToZellousChannel(room: RoomRecord): Record<string, unknown> 
   };
 }
 
+export function mapGatewayMessageToDiscordLike(message: any): DiscordMessageLike {
+  const attachments = Array.from(message.attachments?.values?.() ?? []).map(function(item: any) { return { url: String(item.url ?? ""), content_type: String(item.contentType ?? ""), size: Number(item.size ?? 0), filename: String(item.name ?? ""), width: item.width ?? null, height: item.height ?? null }; });
+  const mentions = Array.from(message.mentions?.users?.values?.() ?? []).map(function(user: any) { return String(user.id); });
+  const reactions = Array.from(message.reactions?.cache?.values?.() ?? []).map(function(item: any) { return { emoji: String(item.emoji?.name ?? item.emoji?.id ?? ""), userId: "", createdAt: Number(message.createdTimestamp ?? Date.now()) }; });
+  return {
+    id: String(message.id),
+    content: String(message.content ?? ""),
+    author: { id: String(message.author?.id ?? ""), username: String(message.author?.username ?? ""), avatar: message.author?.avatar ?? null },
+    timestamp: Number(message.createdTimestamp ?? Date.now()),
+    edited_timestamp: message.editedTimestamp ?? null,
+    message_reference: message.reference?.messageId ? { message_id: String(message.reference.messageId) } : null,
+    mentions,
+    attachments,
+    reactions
+  };
+}
+
+export function stableDiscordVersion(id: string): number {
+  return Number(BigInt(id) >> 22n);
+}
 export function mapDiscordMessageToMessage(message: DiscordMessageLike, room: RoomRecord, author: ActorRef): MessageRecord {
   return {
     messageId: "message-" + message.id,

@@ -2,7 +2,9 @@ import { Client, Events, GatewayIntentBits } from "discord.js";
 import { createCanonicalEvent } from "../canonical.js";
 import type { Config } from "../config.js";
 import type { Logger } from "../logger.js";
-import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresenceToPresence, mapMessageToDiscordPayload, roomToDiscordCreate, roomToDiscordPatch, type DiscordChannelLike, type DiscordMessageLike } from "../mappers.js";
+import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresenceToPresence, mapGatewayMessageToDiscordLike, mapMessageToDiscordPayload, roomToDiscordCreate, roomToDiscordPatch, stableDiscordVersion, type DiscordChannelLike } from "../mappers.js";
+import type { MappingStore } from "../mapping.js";
+import type { BridgeEchoStore } from "../sync/echo.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
 
 export const BASE_INTENTS = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildMessageTyping, GatewayIntentBits.GuildVoiceStates];
@@ -12,15 +14,19 @@ export function gatewayIntents(config: Config): number[] {
   return config.privilegedIntentsEnabled ? [...BASE_INTENTS, ...PRIVILEGED_INTENTS] : [...BASE_INTENTS];
 }
 
-export function degradedFeatures(config: Config): string[] {
+export function degradedFeatures(config: Config, readiness?: { complete: boolean }): string[] {
   const features: string[] = [];
   if (!config.privilegedIntentsEnabled) features.push("message-content", "presence", "member-list");
-  if (config.voiceTokens.length < 2) features.push("per-user-voice-reflection");
+  const complete = readiness ? readiness.complete : config.voiceTokens.length >= 2 && config.privilegedIntentsEnabled;
+  if (!complete) features.push("per-user-voice-reflection");
   return features;
 }
 
-function messageChannelId(message: MessageRecord | undefined): string {
-  return String(message?.roomId ?? "").replace("room-", "");
+function messageChannelId(message: MessageRecord | undefined, mapping?: MappingStore): string {
+  const roomId = String(message?.roomId ?? "");
+  const zellousId = roomId.startsWith("room-") ? roomId : null;
+  const mapped = zellousId ? mapping?.getRoomByZellousId(zellousId) : undefined;
+  return String(mapped?.discordId ?? roomId.replace("room-", ""));
 }
 
 function bridgeActor() {
@@ -42,7 +48,7 @@ export class DiscordAdapter implements BridgeAdapter {
   readonly source: Source = "discord";
   private client: Client | null = null;
 
-  constructor(private readonly config: Config, private readonly logger: Logger) {}
+  constructor(private readonly config: Config, private readonly logger: Logger, private readonly mapping: MappingStore, private readonly echo: BridgeEchoStore) {}
 
   async snapshot(): Promise<AdapterSnapshot> {
     const channels = await discordRequest(this.config, "GET", "/guilds/" + this.config.discordGuildId + "/channels") as DiscordChannelLike[];
@@ -65,14 +71,19 @@ export class DiscordAdapter implements BridgeAdapter {
         if (room && room.discordId) await discordRequest(this.config, "DELETE", "/channels/" + room.discordId);
       }
     } else if (event.operation === "message.create" || event.operation === "message.correction" || event.operation === "message.attachment") {
-      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message) + "/messages", mapMessageToDiscordPayload(message));
+      if (message) {
+        const nonce = "zdb-" + (message.zellousEventId ?? event.sourceId);
+        this.echo.rememberNonce(nonce);
+        const created = await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping) + "/messages", { ...mapMessageToDiscordPayload(message), nonce }) as { id?: string } | null;
+        if (created?.id) this.echo.rememberDiscord(String(created.id));
+      }
     } else if (event.operation === "message.reaction") {
       const reactions = message?.reactions ?? [];
-      for (const reaction of reactions) await discordRequest(this.config, "PUT", "/channels/" + String(message?.roomId) + "/messages/" + reaction.messageId + "/reactions/" + encodeURIComponent(reaction.emoji) + "/@me");
+      for (const reaction of reactions) await discordRequest(this.config, "PUT", "/channels/" + messageChannelId(message, this.mapping) + "/messages/" + reaction.messageId + "/reactions/" + encodeURIComponent(reaction.emoji) + "/@me");
     } else if (event.operation === "message.delete") {
-      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + messageChannelId(message) + "/messages/" + message.discordId);
+      if (message?.discordId) await discordRequest(this.config, "DELETE", "/channels/" + messageChannelId(message, this.mapping) + "/messages/" + message.discordId);
     } else if (event.operation === "message.typing") {
-      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message) + "/typing");
+      if (message) await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping) + "/typing");
     }
     return { ok: true, sourceId: event.sourceId, version: event.version, suppressed: false };
   }
@@ -89,7 +100,7 @@ export class DiscordAdapter implements BridgeAdapter {
     client.on(Events.ChannelCreate, async (channel: any) => { await publish(this.channelEvent(channel, "room.create")); });
     client.on(Events.ChannelUpdate, async (channel: any) => { await publish(this.channelEvent(channel, "room.rename")); });
     client.on(Events.ChannelDelete, async (channel: any) => { await publish(this.channelEvent(channel, "room.delete")); });
-    client.on(Events.MessageCreate, async (message: any) => { await publish(this.messageEvent(message, "message.create")); });
+    client.on(Events.MessageCreate, async (message: any) => { if (this.isBridgeEcho(message)) return; await publish(this.messageEvent(message, "message.create")); });
     client.on(Events.MessageUpdate, async (message: any) => { await publish(this.messageEvent(message, "message.correction")); });
     client.on(Events.MessageDelete, async (message: any) => { await publish(this.messageEvent(message, "message.delete")); });
     client.on(Events.MessageReactionAdd, async (reaction: any) => { await publish(this.reactionEvent(reaction, "message.reaction")); });
@@ -124,16 +135,25 @@ export class DiscordAdapter implements BridgeAdapter {
     });
   }
 
+  private isBridgeEcho(message: any): boolean {
+    const id = String(message.id ?? "");
+    const nonce = String(message.nonce ?? "");
+    const authorId = String(message.author?.id ?? "");
+    return this.echo.isDiscord(id) || this.echo.isNonce(nonce) || nonce.startsWith("zdb-") || (Boolean(message.author?.bot) && authorId === String(this.client?.user?.id ?? ""));
+  }
+
   private messageEvent(message: any, operation: "message.create" | "message.correction" | "message.delete"): CanonicalEvent {
-    const room = mapDiscordChannelToRoom({ id: String(message.channelId), type: 0, name: "channel" }, this.config.zellousServerId, this.config.discordGuildId);
-    const mapped = mapDiscordMessageToMessage(message as DiscordMessageLike, room, bridgeActor());
+    const channelId = String(message.channelId ?? message.channel?.id ?? "");
+    const room = mapDiscordChannelToRoom({ id: channelId, type: 0, name: "channel" }, this.config.zellousServerId, this.config.discordGuildId);
+    const mapped = mapDiscordMessageToMessage(mapGatewayMessageToDiscordLike(message), room, bridgeActor());
+    const nativeId = String(message.id);
     return createCanonicalEvent({
       schemaVersion: 1,
       source: this.source,
-      sourceId: String(message.id),
+      sourceId: nativeId,
       operation,
-      version: Date.now(),
-      occurredAt: Date.now(),
+      version: stableDiscordVersion(nativeId),
+      occurredAt: mapped.createdAt,
       actor: bridgeActor(),
       room: null,
       payload: { message: mapped },

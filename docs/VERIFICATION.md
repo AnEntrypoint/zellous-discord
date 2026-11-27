@@ -36,3 +36,7 @@ The final window is npm run full:window. It prints ZDBRIDGE_DONE 0 only when eve
 | Cleanup rollback path | npm run cleanup:rollback | cleanup-backup.json restores the previous relay snapshot and recreates deleted Discord channels with new IDs |
 
 Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.
+
+| Live two-way text marker | npm run text:marker | Unique Discord-origin marker appears as kind 42 with the correct e root and unique Zellous-origin marker appears in the mapped Discord channel; no duplicates, echoes, secret value or channel-count change |
+| Text red check | npm run text:red-check, npm run text:red-check -- --self-test | Wrong root, missing marker, duplicate, secret value, hidden privileged-intent failure or changed channel count fails |
+| Voice readiness red check | npm run voice:red-check, npm run voice:red-check -- --self-test | Frame isolation, distinct identities, token-count-only completion, hidden degradation and echo suppression fail |

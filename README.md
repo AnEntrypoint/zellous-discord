@@ -30,3 +30,7 @@ Set BRIDGE_PRIVATE_KEY_HEX in the ignored .env to the 64-hex private key matchin
 ## Owner-authorized reversible duplicate cleanup
 
 Run npm run cleanup once. It preserves canonical channels, deletes only bridge-created duplicates, writes cleanup-backup.json and reports exact before/after counts and IDs. npm run cleanup:rollback and npm run cleanup:red-check provide the rollback path and the red check. destructive cleanup is limited to bridge-created duplicates. Open note: chat-exposed owner key rotation risk remains; the existing key is used without echoing it.
+
+## Live two-way reflection
+
+Stage 2 maps Discord Gateway messages and wireweave per-message events into canonical channels, suppresses bridge echoes by stable native IDs and keeps read-only room guards. Run npm run text:red-check -- --self-test, npm run text:marker and npm run text:red-check. Stage 3 wires credential-ready per-user voice reflection into BridgeService; zero tokens remain honestly degraded and voiceReflectionComplete requires at least two identities plus real frames in both directions. Stage 1 owner-installed DISCORD_VOICE_TOKENS and portal intents remain held; voice is not DONE.

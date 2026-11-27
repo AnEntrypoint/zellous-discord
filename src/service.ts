@@ -10,6 +10,9 @@ import { NostrAdapter } from "./adapters/nostr.js";
 import { HealthServer } from "./health.js";
 import { Metrics } from "./observability.js";
 import { ownerHex, resolveServerId } from "./identity.js";
+import { BridgeEchoStore } from "./sync/echo.js";
+import { VoiceReflection } from "./voice/reflection.js";
+import { emptyVoiceProof, voiceReadiness } from "./voice/readiness.js";
 import type { BridgeAdapter } from "./types.js";
 import type { Config } from "./config.js";
 
@@ -22,6 +25,8 @@ export class BridgeService {
   private zellous: BridgeAdapter | null = null;
   private ledger: Ledger | null = null;
   private config: Config | null = null;
+  private echo: BridgeEchoStore | null = null;
+  private voice: VoiceReflection | null = null;
   private stopping = false;
 
   async start(): Promise<void> {
@@ -34,14 +39,17 @@ export class BridgeService {
     const resolvedConfig = { ...config, zellousServerId: serverId };
     this.ledger = new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl"));
     const mapping = new MappingStore(this.ledger);
+    this.echo = new BridgeEchoStore(config.bridgeStateDir);
+    this.voice = new VoiceReflection(resolvedConfig, serverId, this.logger);
+    await this.voice.start();
     if (process.env.ZDBRIDGE_MOCK === "1") {
       this.discord = new MockAdapter("discord", serverId, config.discordGuildId);
       this.zellous = new MockAdapter("zellous", serverId, config.discordGuildId);
     } else {
-      this.discord = new DiscordAdapter(resolvedConfig, this.logger);
-      this.zellous = new NostrAdapter(resolvedConfig, serverId, this.logger);
+      this.discord = new DiscordAdapter(resolvedConfig, this.logger, mapping, this.echo!);
+      this.zellous = new NostrAdapter(resolvedConfig, serverId, this.logger, mapping, this.echo!);
     }
-    this.engine = new SyncEngine(this.discord, this.zellous, this.ledger, mapping, this.logger);
+    this.engine = new SyncEngine(this.discord, this.zellous, this.ledger, mapping, this.logger, this.voice!);
     await this.engine.start();
     this.metrics.set("service.started", 1);
     this.health = new HealthServer(config.healthPort, this.metrics, () => this.snapshot());
@@ -59,6 +67,7 @@ export class BridgeService {
     if (this.engine) await this.engine.stop();
     if (this.discord) await this.discord.close();
     if (this.zellous) await this.zellous.close();
+    if (this.voice) await this.voice.stop();
     this.metrics.set("service.started", 0);
     this.logger?.info("bridge service stopped");
   }
@@ -71,7 +80,8 @@ export class BridgeService {
 
   snapshot(): Record<string, unknown> {
     const state = this.ledger?.getState();
-    const features = this.config ? degradedFeatures(this.config) : ["uninitialized"];
+    const readiness = this.config ? (this.voice ? this.voice.readiness() : voiceReadiness(this.config, emptyVoiceProof())) : null;
+    const features = this.config ? degradedFeatures(this.config, readiness ?? undefined) : ["uninitialized"];
     return {
       status: this.stopping ? "stopping" : features.length > 0 ? "degraded" : "ok",
       ownerHex: this.config ? ownerHex(this.config) : null,
@@ -79,8 +89,11 @@ export class BridgeService {
       privilegedIntentsEnabled: this.config?.privilegedIntentsEnabled ?? false,
       gatewayIntents: this.config ? gatewayIntents(this.config).map(String) : [],
       degradedFeatures: features,
-      voiceTokenCount: this.config?.voiceTokens.length ?? 0,
-      voiceReflectionComplete: (this.config?.voiceTokens.length ?? 0) >= 2,
+      voiceTokenCount: readiness?.voiceTokenCount ?? 0,
+      voiceReflectionComplete: readiness?.voiceReflectionComplete ?? false,
+      voiceReadinessReason: readiness?.reason ?? "UNINITIALIZED",
+      voiceIdentityCount: readiness?.identityCount ?? 0,
+      voiceFrameCount: readiness?.frameCount ?? 0,
       rooms: state?.rooms.size ?? 0,
       messages: state?.messages.size ?? 0,
       suppressions: state?.suppressions.size ?? 0,

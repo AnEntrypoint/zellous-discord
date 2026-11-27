@@ -3,6 +3,7 @@ import { Logger } from "../logger.js";
 import { discordInventory } from "./inventory.js";
 import { DiscordVoicePool } from "../voice/discord.js";
 import { VoiceIdentityLedger } from "../voice/identity.js";
+import { emptyVoiceProof, voiceReadiness } from "../voice/readiness.js";
 import type { VoiceFrame } from "../types.js";
 
 export interface VoiceSmokeResult {
@@ -23,8 +24,9 @@ function syntheticFrame(voiceId: string, direction: "discord-to-zellous" | "zell
 }
 
 export async function voiceSmoke(config: Config): Promise<VoiceSmokeResult> {
-  if (config.voiceTokens.length < 2) {
-    return { ok: true, degraded: true, reason: "VOICE_POOL_ABSENT", guildId: config.discordGuildId, channelId: "", poolCapacity: 0, identities: [], streams: 0, closed: true };
+  const readiness = voiceReadiness(config, emptyVoiceProof());
+  if (readiness.degraded) {
+    return { ok: true, degraded: true, reason: readiness.reason, guildId: config.discordGuildId, channelId: "", poolCapacity: config.voiceTokens.length, identities: [], streams: 0, closed: true };
   }
   const rooms = await discordInventory(config);
   const voiceRoom = rooms.find((room) => room.type === "voice" && room.discordId);
