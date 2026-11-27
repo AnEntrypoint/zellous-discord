@@ -44,7 +44,7 @@ async function stopByPid(pid, port) {
 }
 
 async function healthReady(port) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     try {
       const response = await fetch("http://127.0.0.1:" + String(port) + "/health", { signal: AbortSignal.timeout(2000) });
       if (response.status === 200) return await response.json();
