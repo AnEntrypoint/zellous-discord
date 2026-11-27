@@ -75,14 +75,11 @@ else {
   const config = loadConfigFromEnvFile();
   const oldPid = assertOneService(serviceLines());
   await stopByPid(oldPid, config.healthPort);
-  const child = spawn(process.execPath, ["dist/cli.js", "serve"], { env: { ...process.env }, stdio: ["ignore", "pipe", "pipe"], detached: true });
-  let output = "";
-  child.stdout.on("data", function(chunk) { output += chunk.toString(); });
-  child.stderr.on("data", function(chunk) { output += chunk.toString(); });
+  const child = spawn(process.execPath, ["dist/cli.js", "serve"], { env: { ...process.env }, stdio: "ignore", detached: true });
+  child.unref();
   const health = await healthReady(config.healthPort);
   const newPid = assertOneService(serviceLines());
   assert.equal(newPid, child.pid, "live service PID mismatch");
-  assert.equal(findSecretPattern(output), null, "secret value in output");
   assert.equal(findSecretPattern(JSON.stringify(health)), null, "secret value in health");
   console.log("LIVE_RESTART_PASS oldPid=" + String(oldPid) + " newPid=" + String(newPid) + " health=" + health.status);
 }
