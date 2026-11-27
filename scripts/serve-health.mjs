@@ -40,6 +40,14 @@ const readiness = voiceReadiness(loadConfigFromEnvFile(), emptyVoiceProof());
 assert.equal(health.voiceReflectionComplete, readiness.voiceReflectionComplete);
 assert.equal(health.voiceTokenCount, readiness.voiceTokenCount);
 assert.equal(health.voiceReadinessReason, readiness.reason);
+assert.equal(health.voicePoolState, readiness.voicePoolState);
+assert.equal(health.voiceReflectionComplete, false);
+assert.equal(health.privilegedIntentsEnabled, false);
+if (readiness.voiceTokenCount === 1) {
+  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
+  assert.equal(readiness.voicePoolState, "insufficient");
+}
 if (readiness.degraded) assert.ok(health.degradedFeatures.includes("per-user-voice-reflection"));
 assert.equal(findSecretPattern(output), null);
 

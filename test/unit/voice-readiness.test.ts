@@ -12,6 +12,16 @@ test("zero tokens stay honestly degraded", function() {
   assert.equal(readiness.reason, "VOICE_POOL_ABSENT");
 });
 
+test("one token reports an insufficient voice pool", function() {
+  const config = loadConfig({ ...base, DISCORD_VOICE_TOKENS: "token-a" });
+  const readiness = voiceReadiness(config, emptyVoiceProof());
+  assert.equal(readiness.voiceTokenCount, 1);
+  assert.equal(readiness.voicePoolState, "insufficient");
+  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
+  assert.equal(readiness.voiceReflectionComplete, false);
+});
+
 test("token count alone never proves voice reflection", function() {
   const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a,token-b" });
   const readiness = voiceReadiness(config, emptyVoiceProof());

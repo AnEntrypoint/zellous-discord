@@ -34,3 +34,5 @@ Run npm run cleanup once. It preserves canonical channels, deletes only bridge-c
 ## Live two-way reflection
 
 Stage 2 maps Discord Gateway messages and wireweave per-message events into canonical channels, suppresses bridge echoes by stable native IDs and keeps read-only room guards. Run npm run text:red-check -- --self-test, npm run text:marker and npm run text:red-check. Stage 3 wires credential-ready per-user voice reflection into BridgeService; zero tokens remain honestly degraded and voiceReflectionComplete requires at least two identities plus real frames in both directions. Stage 1 is held only for owner-installed DISCORD_VOICE_TOKENS. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off. Voice is not DONE.
+
+With exactly one distinct DISCORD_VOICE_TOKENS entry, health and witnesses report an insufficient one-identity voice pool as VOICE_POOL_INSUFFICIENT, voiceTokenCount=1 and voicePoolState=insufficient. privilegedIntentsEnabled stays false and voiceReflectionComplete stays false. Voice is not DONE until a second distinct installed bot token and real two-way frames are proven.

@@ -90,6 +90,7 @@ export class BridgeService {
       gatewayIntents: this.config ? gatewayIntents(this.config).map(String) : [],
       degradedFeatures: features,
       voiceTokenCount: readiness?.voiceTokenCount ?? 0,
+      voicePoolState: readiness?.voicePoolState ?? "absent",
       voiceReflectionComplete: readiness?.voiceReflectionComplete ?? false,
       voiceReadinessReason: readiness?.reason ?? "UNINITIALIZED",
       voiceIdentityCount: readiness?.identityCount ?? 0,

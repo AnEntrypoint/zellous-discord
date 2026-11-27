@@ -23,6 +23,8 @@ const needles = [
   "Portal intent approval and relay-set confirmation are not held",
   "text reflection works with privileged intents off",
   "two-token DISCORD_VOICE_TOKENS pool remains held",
+  "VOICE_POOL_INSUFFICIENT",
+  "voicePoolState=insufficient",
   "DISCORD_PRIVILEGED_INTENTS=false",
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
   "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
@@ -51,6 +53,9 @@ function selfTest() {
   threw = false;
   try { assertAlignment(all.split("Portal intent approval and relay-set confirmation are not held").join("Portal approval is held")); } catch { threw = true; }
   assert.ok(threw, "held direction did not fail");
+  threw = false;
+  try { assertAlignment(all.split("VOICE_POOL_INSUFFICIENT").join("VOICE_POOL_ABSENT")); } catch { threw = true; }
+  assert.ok(threw, "one-token insufficient reason did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
 

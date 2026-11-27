@@ -30,6 +30,16 @@ function assertVoiceClaim(features, readiness) {
   assert.equal(readiness.complete, false, "zero-token readiness must stay incomplete");
 }
 
+function assertOneTokenState(config) {
+  const one = loadConfig({ ...config, DISCORD_VOICE_TOKENS: "token-a" });
+  const readiness = voiceReadiness(one, emptyVoiceProof());
+  assert.equal(readiness.voiceTokenCount, 1);
+  assert.equal(readiness.voicePoolState, "insufficient");
+  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
+  assert.equal(readiness.voiceReflectionComplete, false);
+}
+
 function assertHealth(health) {
   assert.equal(health.status, "degraded");
   assert.equal(health.privilegedIntentsEnabled, false);
@@ -49,6 +59,7 @@ function selfTest() {
   expectThrow(function() { assertNoPrivilegedIntents([...BASE_INTENTS, ...PRIVILEGED_INTENTS], "default"); }, "disallowed-intent gateway close");
   expectThrow(function() { assertDegradedFeatures(["message-content"]); }, "hidden degradation");
   expectThrow(function() { assertVoiceClaim(["per-user-voice-reflection"], { complete: true, voiceReflectionComplete: true }); }, "voice reflection claim without pool");
+  expectThrow(function() { const one = loadConfig({ ...base, DISCORD_VOICE_TOKENS: "token-a" }); const readiness = voiceReadiness(one, emptyVoiceProof()); assert.equal(readiness.reason, "VOICE_POOL_ABSENT"); }, "one-token state reported as absent");
   expectThrow(function() { assertHealth({ status: "ok", privilegedIntentsEnabled: true, degradedFeatures: [], voiceReflectionComplete: true, voiceTokenCount: 2 }); }, "hidden health degradation");
   console.log("INTENT_GUARD_SELF_TEST_PASS");
 }
@@ -69,6 +80,7 @@ function main() {
   assertOptInPrivilegedIntents(gatewayIntents(optIn));
 
   const readiness = voiceReadiness(defaultConfig, emptyVoiceProof());
+  assertOneTokenState(base);
   const features = degradedFeatures(defaultConfig, readiness);
   assertDegradedFeatures(features);
   assertVoiceClaim(features, readiness);
