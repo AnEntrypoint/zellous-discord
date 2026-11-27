@@ -13,6 +13,11 @@ function roomFor(channelId) {
 }
 
 function assertRoot(room, channelId) {
+  const cross = { ...room, discordId: "1575444662024413214", zellousId: "room-" + channelId };
+  const crossRoots = rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [cross] });
+  assert.equal(crossRoots.get(channelRoot(REQUIRED_SERVER_ID, channelId)), undefined, "cross-channel room root should not exist");
+  const canonicalRoots = rootChannelMap(REQUIRED_SERVER_ID, { allRooms: () => [room, cross] });
+  assert.equal(canonicalRoots.get(channelRoot(REQUIRED_SERVER_ID, channelId)), channelId, "cross-channel room overrode canonical root");
   assert.equal(room.discordId, channelId, "Zellous room missing Discord source ID");
   const mapping = { allRooms: () => [room] };
   const roots = rootChannelMap(REQUIRED_SERVER_ID, mapping);

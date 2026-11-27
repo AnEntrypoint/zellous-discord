@@ -19,8 +19,12 @@ export function rootChannelMap(serverId: string, mapping: MappingStore): Map<str
   const result = new Map<string, string>();
   for (const room of mapping.allRooms()) {
     if (!room.discordId) continue;
-    const candidates = [room.zellousId, room.discordId, "room-" + room.discordId, room.roomId].filter(Boolean) as string[];
-    for (const candidate of candidates) result.set(channelHash(serverId, candidate), room.discordId);
+    const discordId = String(room.discordId);
+    const canonical = "room-" + discordId;
+    const candidates = [canonical, discordId];
+    if (room.roomId === canonical || room.roomId === discordId || room.roomId === "zellous-" + discordId) candidates.push(room.roomId);
+    if (room.zellousId === canonical || room.zellousId === "zellous-" + discordId) candidates.push(room.zellousId);
+    for (const candidate of candidates) result.set(channelHash(serverId, candidate), discordId);
   }
   return result;
 }
