@@ -28,7 +28,7 @@ export class VoiceReflection {
   }
 
   async start(): Promise<void> {
-    if (this.config.voiceTokens.length < 2) return;
+    if (voiceReadiness(this.config, this.proof).degraded) return;
     const response = await fetch("https://discord.com/api/v10/guilds/" + this.config.discordGuildId + "/channels", { headers: { Authorization: "Bot " + this.config.discordToken.reveal() }, signal: AbortSignal.timeout(10000) });
     const channels = await response.json() as Array<{ id: string; type: number; name: string }>;
     const voiceChannel = channels.find(function(channel) { return channel.type === 2; });
