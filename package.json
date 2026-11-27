@@ -50,6 +50,7 @@
     "live:reconcile": "node dist/cli.js reconcile",
     "live:inventory": "node dist/cli.js inventory",
     "live:voice": "node dist/cli.js voice-smoke",
+    "live:restart": "node scripts/live-restart.mjs",
     "restart:recovery": "node scripts/restart-recovery.mjs",
     "health": "node dist/cli.js health",
     "serve": "node dist/cli.js serve"

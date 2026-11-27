@@ -27,6 +27,8 @@ const commands = [
   ["npm", ["run", "channel-root:red-check"]],
   ["npm", ["run", "text:red-check", "--", "--self-test"]],
   ["npm", ["run", "voice:red-check", "--", "--self-test"]],
+  ["npm", ["run", "live:restart", "--", "--self-test"]],
+  ["npm", ["run", "live:restart"]],
   ["npm", ["run", "text:marker"]],
   ["npm", ["run", "text:red-check"]],
   ["npm", ["run", "voice:red-check"]],
