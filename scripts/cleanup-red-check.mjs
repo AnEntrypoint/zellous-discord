@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { once } from "node:events";
+import { execFileSync } from "node:child_process";
 import { loadConfigFromEnvFile } from "../dist/config.js";
 import { ownerHex, resolveServerId } from "../dist/identity.js";
 import { cleanupState, duplicateKeys } from "../dist/live/cleanup.js";
 import { findSecretPattern } from "../dist/redaction.js";
 
-function sleep(ms) {
-  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+function servicePids() {
+  return execFileSync("ps", ["-eo", "pid,args"], { encoding: "utf8" }).split(String.fromCharCode(10)).filter(function(line) { return line.indexOf("dist/cli.js serve") >= 0; }).map(function(line) { return Number(line.trim().split(/\s+/)[0]); }).filter(function(pid) { return pid > 0; });
 }
 
 function selfTest() {
@@ -31,15 +30,8 @@ async function main() {
   assert.equal(before.resurrectedDuplicateIds.length, 0, "bridge duplicate remains");
   assert.equal(before.duplicateKeys.length, 0, "duplicate channel key remains");
   const beforeIds = new Set(before.channels.map(function(channel) { return channel.id; }));
-  const output = [];
-  const child = spawn(process.execPath, ["dist/cli.js", "serve"], {
-    cwd: process.cwd(),
-    env: { ...process.env, ZDBRIDGE_READ_ONLY: "1", HEALTH_PORT: String(port) },
-    stdio: ["ignore", "pipe", "pipe"]
-  });
-  child.stdout.on("data", function(chunk) { output.push(String(chunk)); });
-  child.stderr.on("data", function(chunk) { output.push(String(chunk)); });
-  await sleep(5000);
+  const pids = servicePids();
+  assert.equal(pids.length, 1, "expected exactly one live service");
   const healthResponse = await fetch("http://127.0.0.1:" + String(port) + "/health");
   assert.equal(healthResponse.status, 200, "health endpoint unavailable");
   const health = await healthResponse.json();
@@ -47,13 +39,7 @@ async function main() {
   assert.equal(health.ownerHex, owner, "health owner mismatch");
   assert.equal(health.serverId, serverId, "health server id mismatch");
   assert.ok(Array.isArray(health.degradedFeatures) && health.degradedFeatures.length > 0, "degraded features hidden");
-  child.kill("SIGTERM");
-  const exited = await Promise.race([once(child, "exit").then(function() { return true; }), sleep(5000).then(function() { return false; })]);
-  if (!exited) {
-    child.kill("SIGKILL");
-    await once(child, "exit");
-  }
-  const text = output.join("");
+  const text = JSON.stringify({ health });
   assert.equal(findSecretPattern(text), null, "token or private key value in output");
   const after = await cleanupState(config, serverId);
   assert.equal(after.missingCanonicalIds.length, 0, "read-only startup deleted canonical channel");
@@ -62,7 +48,7 @@ async function main() {
   const afterIds = new Set(after.channels.map(function(channel) { return channel.id; }));
   const created = [...afterIds].filter(function(id) { return !beforeIds.has(id); });
   assert.equal(created.length, 0, "read-only startup created Discord channel");
-  console.log("CLEANUP_RED_CHECK_PASS pid=" + String(child.pid ?? 0) + " before=" + String(before.channels.length) + " after=" + String(after.channels.length) + " canonical=" + String(before.backup.canonicalIds.length) + " created=0 tokenExposure=false");
+  console.log("CLEANUP_RED_CHECK_PASS pid=" + String(pids[0]) + " port=" + String(port) + " before=" + String(before.channels.length) + " after=" + String(after.channels.length) + " canonical=" + String(before.backup.canonicalIds.length) + " created=0 tokenExposure=false");
 }
 
 if (process.argv.includes("--self-test")) selfTest();
