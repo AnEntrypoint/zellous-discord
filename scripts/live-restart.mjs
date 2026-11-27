@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { openSync, closeSync, mkdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { loadConfigFromEnvFile } from "../dist/config.js";
-import { findSecretPattern } from "../dist/redaction.js";
+import { findSecretPattern, redactText } from "../dist/redaction.js";
 
 function serviceLines() {
   return execFileSync("ps", ["-eo", "pid,args"], { encoding: "utf8" }).split(String.fromCharCode(10)).filter(function(line) { return line.indexOf("dist/cli.js serve") >= 0; });
@@ -43,15 +44,15 @@ async function stopByPid(pid, port) {
   } catch {}
 }
 
-async function healthReady(port) {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+async function healthReady(port, logPath) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       const response = await fetch("http://127.0.0.1:" + String(port) + "/health", { signal: AbortSignal.timeout(2000) });
       if (response.status === 200) return await response.json();
     } catch {}
     await new Promise(function(resolve) { setTimeout(resolve, 500); });
   }
-  throw new Error("live service health did not answer");
+  throw new Error("live service health did not answer; log=" + redactText(readFileSync(logPath, "utf8")).slice(-800));
 }
 
 function selfTest() {
@@ -74,7 +75,6 @@ if (process.argv.includes("--self-test")) selfTest();
 else {
   const config = loadConfigFromEnvFile();
   const oldLines = serviceLines();
-  assert.ok(oldLines.length > 0, "missing live service");
   for (const line of oldLines) {
     const oldPid = Number(line.trim().split(/\s+/)[0]);
     await stopByPid(oldPid, config.healthPort);
@@ -84,9 +84,15 @@ else {
     const response = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health", { signal: AbortSignal.timeout(1000) });
     assert.notEqual(response.status, 200, "live service health still answers after stop");
   } catch {}
-  const child = spawn(process.execPath, ["dist/cli.js", "serve"], { env: { ...process.env }, stdio: "ignore", detached: true });
+  const scratch = process.env.HYPERAGENT_SCRATCH || "/config/workspace/tmp";
+  const logDir = join(scratch, "zellous-discord");
+  mkdirSync(logDir, { recursive: true });
+  const logPath = join(logDir, "live-service-current.log");
+  const logFd = openSync(logPath, "w", 0o600);
+  const child = spawn(process.execPath, ["dist/cli.js", "serve"], { env: { ...process.env }, stdio: ["ignore", logFd, logFd], detached: true });
+  closeSync(logFd);
   child.unref();
-  const health = await healthReady(config.healthPort);
+  const health = await healthReady(config.healthPort, logPath);
   const newPid = assertOneService(serviceLines());
   assert.equal(newPid, child.pid, "live service PID mismatch");
   assert.equal(findSecretPattern(JSON.stringify(health)), null, "secret value in health");

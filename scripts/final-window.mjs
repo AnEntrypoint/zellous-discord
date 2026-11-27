@@ -17,8 +17,11 @@ const commands = [
   ["npm", ["run", "live:alignment"]],
   ["npm", ["run", "alignment:red-check"]],
   ["npm", ["run", "discover:red-check"]],
+  ["npm", ["run", "source:red-check", "--", "--self-test"]],
+  ["npm", ["run", "presence:red-check", "--", "--self-test"]],
   ["npm", ["run", "discover:publish"]],
   ["npm", ["run", "discover:query"]],
+  ["npm", ["run", "source:truth"]],
   ["npm", ["run", "snapshot:reconcile"]],
   ["npm", ["run", "live:inventory"]],
   ["npm", ["run", "snapshot:red-check"]],
@@ -37,6 +40,8 @@ const commands = [
   ["npm", ["run", "channel:marker-red-check"]],
   ["npm", ["run", "voice:red-check"]],
   ["npm", ["run", "live:voice"]],
+  ["npm", ["run", "source:red-check"]],
+  ["npm", ["run", "presence:red-check"]],
   ["npm", ["run", "secret:scan"]],
   ["npm", ["run", "secret:red-check"]],
   ["npm", ["run", "serve:check"]],
@@ -47,7 +52,13 @@ const commands = [
 let code = 0;
 try {
   const evidence = readFileSync(evidencePath, "utf8");
-  for (const marker of ["DISCOVER_CARD_VISIBLE", "JOIN_OK", "CHANNELS_OK", "CHAT_OK"]) if (evidence.indexOf(marker) < 0) throw new Error("browser evidence incomplete: " + marker);
+  for (const marker of ["DISCOVER_CARD_VISIBLE", "JOIN_OK", "CHANNELS_OK", "CHAT_OK", "SERVER_NAME_OK"]) if (evidence.indexOf(marker) < 0) throw new Error("browser evidence incomplete: " + marker);
+  if (evidence.includes("Discord Bridge")) throw new Error("stale browser server name");
+  if (!evidence.includes("247420")) throw new Error("live guild name missing from browser evidence");
+  if (process.env.GATE_TREE) {
+    const head = execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
+    if (process.env.GATE_TREE !== head) throw new Error("gate tree differs from worktree");
+  }
   for (const [command, args] of commands) {
     console.log("WITNESS " + command + " " + args.join(" "));
     execFileSync(command, args, { stdio: "inherit" });

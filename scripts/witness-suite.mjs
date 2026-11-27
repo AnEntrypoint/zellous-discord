@@ -16,8 +16,11 @@ const commands = [
   ["npm", ["run", "intent:guard"]],
   ["npm", ["run", "intent:red-check"]],
   ["npm", ["run", "discover:red-check"]],
+  ["npm", ["run", "source:red-check", "--", "--self-test"]],
+  ["npm", ["run", "presence:red-check", "--", "--self-test"]],
   ["npm", ["run", "discover:publish"]],
   ["npm", ["run", "discover:query"]],
+  ["npm", ["run", "source:truth"]],
   ["npm", ["run", "snapshot:reconcile"]],
   ["npm", ["run", "live:inventory"]],
   ["npm", ["run", "snapshot:red-check"]],
@@ -38,6 +41,8 @@ const commands = [
   ["npm", ["run", "serve:check"]],
   ["npm", ["run", "restart:recovery"]],
   ["npm", ["run", "live:voice"]],
+  ["npm", ["run", "source:red-check"]],
+  ["npm", ["run", "presence:red-check"]],
   ["git", ["check-ignore", "-v", ".env"]]
 ];
 

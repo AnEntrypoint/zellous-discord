@@ -46,3 +46,7 @@ The active acceptance claim is stopped. The distinct installed voice identity is
 ## Stage 5 per-channel routing alignment
 
 Zellous-origin chat resolves its Discord target from the kind 42 e root, not from wireweave's active UI channel. channel:marker derives inference and warez-and-wonders from live Discord REST, proves each canonical root equals SHA-256(serverId:room-channelId), posts one unique marker per channel, and fails on a wrong-channel marker, a duplicated marker, an active-UI channel fallback or an unknown root that posts. channel-root:red-check verifies both roots against the live ledger. The active acceptance claim remains stopped and the distinct installed voice identity is held.
+
+## Stage 6 live server identity alignment
+
+Discord REST guild name 247420 is the source of truth for kind 34550 metadata, the owner-signed kind 30078 Discover listing, the cached zn_servers name and the playwriter browser DOM. source:truth prints equality across those five surfaces and across the Discord REST, relay channel snapshot and cached channel-map channel names; source:red-check fails on a stale name, a wrong owner signature, a missing browser channel or a secret value. presence:red-check reads the current live service log and fails on the nullable oldPresence error, degraded presence or a gateway error. The row 26 gate label is already corrected. The active acceptance claim remains stopped and the distinct installed voice identity is held.
