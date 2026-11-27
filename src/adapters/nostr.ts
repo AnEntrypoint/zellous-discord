@@ -1,5 +1,6 @@
 import { createCanonicalEvent } from "../canonical.js";
 import { channelHash } from "../nostr.js";
+import { finalizeEvent } from "nostr-tools/pure";
 import type { MappingStore } from "../mapping.js";
 import type { BridgeEchoStore } from "../sync/echo.js";
 import type { MessageRecord } from "../types.js";
@@ -8,6 +9,7 @@ import type { Logger } from "../logger.js";
 import { mapZellousChannelToRoom, roomToZellousChannel, type ZellousChannelLike } from "../mappers.js";
 import { createNodeWireweave } from "../wireweave-node.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, RoomRecord, Source } from "../types.js";
+import { attributionTag, BRIDGE_TAG, channelRoot, discordMessageKey, discordProfileEvent, parseAttribution, rootChannelMap } from "../live/source.js";
 
 export class NostrAdapter implements BridgeAdapter {
   readonly source: Source = "zellous";
@@ -79,8 +81,7 @@ export class NostrAdapter implements BridgeAdapter {
       this.listeners.push(() => target.removeEventListener(name, listener));
     };
     attach(this.ww.channels, "updated", (detail) => this.roomEvent(detail, "room.upsert"));
-    attach(this.ww.chat, "message", (detail) => this.messageEvent(detail, "message.create"));
-    this.ww.pool.subscribe("zdb-chat-" + this.serverId, this.chatFilters(), (event: any) => { void handler(this.messageEvent({ message: this.ww.chat._eventToMsg(event) }, "message.create")); });
+    this.ww.pool.subscribe("zdb-chat-" + this.serverId, this.chatFilters(), (event: any) => { void handler(this.messageEvent(event, "message.create")); });
     attach(this.ww.chat, "typing", (detail) => this.sideEvent("message.typing", detail));
     attach(this.ww.presence, "updated", (detail) => this.sideEvent("presence.update", detail));
     attach(this.ww.reactions, "updated", (detail) => this.sideEvent("message.reaction", detail));
@@ -115,35 +116,32 @@ export class NostrAdapter implements BridgeAdapter {
   }
 
   private chatFilters(): any[] {
-    const roots = new Set<string>();
-    for (const room of this.mapping.allRooms()) {
-      if (room.zellousId) roots.add(channelHash(this.serverId, room.zellousId));
-      if (room.discordId) roots.add(channelHash(this.serverId, "room-" + room.discordId));
-    }
-    return [{ kinds: [42], "#e": [...roots], limit: 200 }];
-  }
-
-  private canonicalDiscordChannelId(zellousChannelId: string): string {
-    const mapped = this.mapping.getRoomByZellousId(zellousChannelId);
-    if (mapped?.discordId) return mapped.discordId;
-    return zellousChannelId.startsWith("room-") ? zellousChannelId.slice(5) : zellousChannelId;
+    const roots = [...rootChannelMap(this.serverId, this.mapping).keys()];
+    return [{ kinds: [42], "#e": roots, limit: 200 }];
   }
 
   private messageEvent(detail: any, operation: "message.create"): CanonicalEvent {
-    const raw = detail.message ?? detail.list?.at?.(-1) ?? {};
+    const raw = detail.message ?? detail.list?.at?.(-1) ?? detail;
     const eventId = String(raw.id ?? "messages");
-    const tags = (raw.tags ?? []) as string[];
-    if (this.echo.isZellous(eventId) || tags.includes("zdb-bridge")) return this.suppressedEvent(eventId, operation);
-    const zellousChannelId = String(this.ww.currentChannelId ?? this.ww.chat.activeChannelId ?? "");
-    const discordId = this.canonicalDiscordChannelId(zellousChannelId);
+    const tags = (raw.tags ?? []) as string[][];
+    const rootTag = tags.find(function(tag) { return tag[0] === "e" && (tag[3] === "root" || !tag[3]); }) ?? tags.find(function(tag) { return tag[0] === "e"; });
+    const root = rootTag?.[1] ?? "";
+    const discordId = root ? rootChannelMap(this.serverId, this.mapping).get(root) : undefined;
+    const username = parseAttribution(tags);
+    if (!root || !discordId || !username) return this.suppressedEvent(eventId, operation);
+    if (this.echo.isZellous(eventId) || tags.some(function(tag) { return tag[0] === "t" && tag[1] === BRIDGE_TAG; })) return this.suppressedEvent(eventId, operation);
+    const zellousChannelId = "room-" + discordId;
+    const room = this.mapping.getRoomByDiscordId(discordId);
+    const createdAt = Number(raw.created_at ?? Math.floor(Date.now() / 1000)) * 1000;
+    const sourceUserId = String(raw.pubkey ?? "");
     const message: MessageRecord = {
       messageId: "message-" + eventId,
       discordId: null,
       zellousEventId: eventId,
       roomId: "room-" + discordId,
-      author: { source: this.source, sourceUserId: String(raw.userId ?? ""), bridgePubkey: String(raw.userId ?? ""), displayName: "zellous", avatarUrl: null },
+      author: { source: this.source, sourceUserId, bridgePubkey: sourceUserId, displayName: username, avatarUrl: null },
       content: String(raw.content ?? ""),
-      createdAt: Number(raw.timestamp ?? Date.now()),
+      createdAt,
       editedAt: null,
       replyTo: raw.replyTo?.id ?? null,
       mentions: [],
@@ -161,10 +159,10 @@ export class NostrAdapter implements BridgeAdapter {
       source: this.source,
       sourceId: eventId,
       operation,
-      version: Math.floor(message.createdAt / 1000),
-      occurredAt: message.createdAt,
+      version: Math.floor(createdAt / 1000),
+      occurredAt: createdAt,
       actor: message.author,
-      room: { roomId: message.roomId, discordId, zellousId: zellousChannelId, serverId: this.serverId, guildId: this.config.discordGuildId, type: "text", parentId: null, position: 0, name: "channel", topic: null },
+      room: { roomId: message.roomId, discordId, zellousId: zellousChannelId, serverId: this.serverId, guildId: this.config.discordGuildId, type: "text", parentId: room?.parentId ?? null, position: room?.position ?? 0, name: room?.name ?? "channel", topic: room?.topic ?? null },
       payload: { message },
       suppressionKey: eventId,
       tracing: [this.source]
@@ -189,10 +187,15 @@ export class NostrAdapter implements BridgeAdapter {
 
   private async publishMessage(message: MessageRecord): Promise<void> {
     const discordId = message.roomId.replace("room-", "");
-    const zellousChannelId = "room-" + discordId;
-    const signed = await this.ww.auth.sign({ kind: 42, created_at: Math.floor(Date.now() / 1000), tags: [["e", channelHash(this.serverId, zellousChannelId), "", "root"], ["t", "zdb-bridge"]], content: message.content });
+    const root = channelRoot(this.serverId, discordId);
+    const username = message.author.displayName || message.author.sourceUserId;
+    const secretKey = discordMessageKey(this.config, message.author.sourceUserId || username);
+    const profile = discordProfileEvent(secretKey, username);
+    const tags: string[][] = [["e", root, "", "root"], ["t", BRIDGE_TAG], attributionTag(username)];
+    if (message.author.bridgePubkey) tags.push(["p", message.author.bridgePubkey]);
+    const signed = finalizeEvent({ kind: 42, created_at: Math.floor(Date.now() / 1000), tags, content: message.content }, secretKey);
     this.echo.rememberZellous(String(signed.id));
-    this.ww.pool.publish(signed);
+    await Promise.all([this.ww.pool.publish(profile), this.ww.pool.publish(signed)]);
   }
 
   private sideEvent(operation: "message.typing" | "presence.update" | "message.reaction", detail: any): CanonicalEvent {

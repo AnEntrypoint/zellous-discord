@@ -60,15 +60,7 @@ export class VoiceReflection {
   }
 
   loadProof(): void {
-    if (!existsSync(this.proofPath)) return;
-    const value = JSON.parse(readFileSync(this.proofPath, "utf8")) as VoiceProof;
-    this.proof = { ...emptyVoiceProof(), ...value };
-  }
-
-  applyProof(proof: VoiceProof): void {
-    this.proof = { ...emptyVoiceProof(), ...proof };
-    mkdirSync(this.config.bridgeStateDir, { recursive: true, mode: 0o700 });
-    writeFileSync(this.proofPath, JSON.stringify(this.proof), { mode: 0o600 });
+    this.proof = emptyVoiceProof();
   }
 
   readiness() {

@@ -1,4 +1,5 @@
 import { channelHash, NOSTR_KINDS, nostrTemplate } from "./nostr.js";
+import { visibleDiscordContent } from "./live/source.js";
 import type { ActorRef, AttachmentRecord, MessageRecord, PresenceRecord, ProfileRecord, ReactionRecord, RoomRecord, RoomType } from "./types.js";
 
 export interface DiscordChannelLike {
@@ -272,7 +273,7 @@ export function mapNostrEventToMessage(event: Record<string, unknown>, room: Roo
 
 export function mapMessageToDiscordPayload(message: MessageRecord): Record<string, unknown> {
   return {
-    content: message.content,
+    content: visibleDiscordContent(message.author.displayName || message.author.sourceUserId, message.content),
     embeds: [],
     message_reference: message.replyTo ? { message_id: message.replyTo } : undefined,
     allowed_mentions: { parse: [] }

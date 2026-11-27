@@ -4,6 +4,7 @@ import { createCanonicalEvent } from "../canonical.js";
 import type { Config } from "../config.js";
 import type { Logger } from "../logger.js";
 import { mapDiscordChannelToRoom, mapDiscordMessageToMessage, mapDiscordPresenceToPresence, mapGatewayMessageToDiscordLike, mapMessageToDiscordPayload, roomToDiscordCreate, roomToDiscordPatch, stableDiscordVersion, type DiscordChannelLike } from "../mappers.js";
+import { discordMessagePubkey } from "../live/source.js";
 import type { MappingStore } from "../mapping.js";
 import type { BridgeEchoStore } from "../sync/echo.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, MessageRecord, RoomRecord, Source } from "../types.js";
@@ -165,7 +166,9 @@ export class DiscordAdapter implements BridgeAdapter {
   private messageEvent(message: any, operation: "message.create" | "message.correction" | "message.delete"): CanonicalEvent {
     const channelId = String(message.channelId ?? message.channel?.id ?? "");
     const room = mapDiscordChannelToRoom({ id: channelId, type: 0, name: "channel" }, this.config.zellousServerId, this.config.discordGuildId);
-    const mapped = mapDiscordMessageToMessage(mapGatewayMessageToDiscordLike(message), room, bridgeActor());
+    const gateway = mapGatewayMessageToDiscordLike(message);
+    const actor = { source: this.source, sourceUserId: gateway.author.id, bridgePubkey: discordMessagePubkey(this.config, gateway.author.id), displayName: gateway.author.username, avatarUrl: gateway.author.avatar };
+    const mapped = mapDiscordMessageToMessage(gateway, room, actor);
     const nativeId = String(message.id);
     return createCanonicalEvent({
       schemaVersion: 1,
@@ -174,7 +177,7 @@ export class DiscordAdapter implements BridgeAdapter {
       operation,
       version: stableDiscordVersion(nativeId),
       occurredAt: mapped.createdAt,
-      actor: bridgeActor(),
+      actor,
       room: null,
       payload: { message: mapped },
       suppressionKey: null,

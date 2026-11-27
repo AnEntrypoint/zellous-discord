@@ -9,6 +9,7 @@ import { roomToZellousChannel } from "../mappers.js";
 import { channelStateContent, dtag } from "../nostr.js";
 import type { RoomRecord } from "../types.js";
 import { discordInventory } from "./inventory.js";
+import { liveGuildName, refreshCachedServerName } from "./source.js";
 
 export interface OwnerBundleEvent {
   kind: number;
@@ -40,7 +41,7 @@ export function ownerChannels(rooms: RoomRecord[]): Record<string, unknown>[] {
   return channels;
 }
 
-export function buildOwnerBundle(config: Config, serverId: string, rooms: RoomRecord[], secretKey: Uint8Array, createdAtBase: number): any[] {
+export function buildOwnerBundle(config: Config, serverId: string, rooms: RoomRecord[], secretKey: Uint8Array, createdAtBase: number, guildName: string): any[] {
   const owner = ownerHex(config);
   if (publicKeyHex(secretKey) !== owner) throw new Error("owner private key does not match ZELLOUS_SERVER_OWNER_HEX");
   const channels = ownerChannels(rooms);
@@ -52,7 +53,7 @@ export function buildOwnerBundle(config: Config, serverId: string, rooms: RoomRe
     status: "listed",
     action: "promote",
     by: owner,
-    name: config.zellousServerName,
+    name: guildName,
     description: "Live Discord guild bridge for zellous chat, channels and Discover.",
     icon: "https://anentrypoint.github.io/zellous/assets/icon.png",
     category: "community",
@@ -61,7 +62,7 @@ export function buildOwnerBundle(config: Config, serverId: string, rooms: RoomRe
     guidelines: true
   };
   const templates = [
-    { kind: 34550, created_at: createdAtBase + 1, tags: [["d", config.zellousServerDTag], ["name", config.zellousServerName], ["color", "#5865F2"]], content: "" },
+    { kind: 34550, created_at: createdAtBase + 1, tags: [["d", config.zellousServerDTag], ["name", guildName], ["color", "#5865F2"]], content: "" },
     { kind: 30078, created_at: createdAtBase + 2, tags: [["d", dtag("discover", serverId)], ["t", "zellous-discover"], ["status", "listed"], ["by", owner], ["guidelines", "true"]], content: JSON.stringify(listing) },
     { kind: 30078, created_at: createdAtBase + 3, tags: [["d", dtag("roles", serverId)]], content: JSON.stringify({ admins: [adminPubkey], mods: [], editors: [] }) },
     { kind: 30078, created_at: createdAtBase + 4, tags: [["d", dtag("channels", serverId)]], content: channelStateContent(channels, categories) }
@@ -72,8 +73,10 @@ export function buildOwnerBundle(config: Config, serverId: string, rooms: RoomRe
 export async function publishOwnerBundle(config: Config, serverId: string): Promise<OwnerBundlePublication> {
   const secretKey = requireOwnerKey(config);
   const rooms = await discordInventory(config);
+  const guildName = await liveGuildName(config);
+  refreshCachedServerName(config, serverId, guildName);
   const channels = ownerChannels(rooms);
-  const events = buildOwnerBundle(config, serverId, rooms, secretKey, Math.floor(Date.now() / 1000));
+  const events = buildOwnerBundle(config, serverId, rooms, secretKey, Math.floor(Date.now() / 1000), guildName);
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const published: OwnerBundleEvent[] = [];

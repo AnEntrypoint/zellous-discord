@@ -67,7 +67,7 @@ const schema = z.object({
   ZELLOUS_RELAYS: z.string().default(""),
   ZELLOUS_SERVER_ID: z.string().default("auto"),
   ZELLOUS_SERVER_D_TAG: z.string().min(1).default("discord-367741339393327104"),
-  ZELLOUS_SERVER_NAME: z.string().min(1).default("Discord Bridge"),
+  ZELLOUS_SERVER_NAME: z.string().default(""),
   ZELLOUS_SERVER_OWNER_HEX: z.string().regex(/^[0-9a-f]{64}$/).default(OWNER_HEX),
   BRIDGE_STATE_DIR: z.string().min(1).default("./data"),
   BRIDGE_PRIVATE_KEY_HEX: z.string().default(""),
