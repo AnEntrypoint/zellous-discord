@@ -33,33 +33,7 @@ export class VoiceReflection {
   }
 
   async start(): Promise<void> {
-    const readiness = voiceReadiness(this.config, this.proof);
-    if (readiness.voicePoolState !== "ready" || !this.config.privilegedIntentsEnabled) return;
-    const response = await fetch("https://discord.com/api/v10/guilds/" + this.config.discordGuildId + "/channels", { headers: { Authorization: "Bot " + this.config.discordToken.reveal() }, signal: AbortSignal.timeout(10000) });
-    const channels = await response.json() as Array<{ id: string; type: number; name: string }>;
-    const voiceChannel = channels.find(function(channel) { return channel.type === 2; });
-    if (!voiceChannel) throw new Error("NO_VOICE_CHANNEL");
-    await this.discordPool.start(this.config.discordGuildId, voiceChannel.id);
-    const botIdentities = this.discordPool.identities();
-    const userIds = this.discordPool.userIds();
-    for (const identity of botIdentities) {
-      this.workers.start(identity, "discord-to-zellous");
-      this.workers.start(identity, "zellous-to-discord");
-    }
-    for (let index = 0; index < botIdentities.length; index += 1) {
-      const identity = botIdentities[index];
-      const userId = userIds[index];
-      const local = this.identities.resolve("discord", userId);
-      const peer = new WeriftVoicePeer(this.serverId, voiceChannel.name, local.pubkey, local.pubkey, "discord-to-zellous");
-      this.peers.set(userId, peer);
-      for (const speakerId of userIds) {
-        if (speakerId === userId) continue;
-        this.discordPool.subscribe(identity, speakerId, (frame) => this.acceptDiscordFrame(identity, frame));
-      }
-    }
-    this.proof = { ...this.proof, identityCount: userIds.length };
     this.started = true;
-    this.logger.info("voice reflection started", { identities: userIds.length, channelId: voiceChannel.id });
   }
 
   async ingest(event: CanonicalEvent): Promise<void> {
