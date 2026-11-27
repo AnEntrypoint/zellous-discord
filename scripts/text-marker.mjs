@@ -97,9 +97,11 @@ async function main() {
   assert.equal(beforeCount, afterCount, "channel count changed");
   const health = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health");
   const healthJson = await health.json();
-  assert.equal(healthJson.privilegedIntentsEnabled, false, "privileged intents unexpectedly enabled");
-  assert.ok(healthJson.degradedFeatures.includes("message-content"), "hidden privileged-intent failure");
-  const result = { ok: true, serverId, channelId, zellousChannelId, root, discordMarker, zellousMarker, zellousUsername, visibleZellousMarker, discordUsername, discordAttributionTagCount: discordAttributionTags.length, zellousRelayAttribution: parseAttribution(zellousReflection[0].tags), discordReflectionEventId: discordReflection[0].id, zellousEventId: zellous.eventId, discordMessageId: created.id, zellousDiscordMessageId: zellousInDiscord[0].id, bareZellousMarkerCount: bareZellousInDiscord.length, channelCount: afterCount, privilegedIntentsEnabled: false, liveServicePid, liveServiceCount: processLines.length, duplicateCount: discordReflection.length + zellousReflection.length + zellousInDiscord.length - 3, secretFound: false };
+  const expectedPrivileged = config.privilegedIntentsEnabled;
+  assert.equal(healthJson.privilegedIntentsEnabled, expectedPrivileged, "health privileged-intent mismatch");
+  const expectedDegraded = expectedPrivileged ? [] : ["message-content", "presence", "member-list"];
+  for (const feature of expectedDegraded) assert.ok(healthJson.degradedFeatures.includes(feature), "hidden privileged-intent failure");
+  const result = { ok: true, serverId, channelId, zellousChannelId, root, discordMarker, zellousMarker, zellousUsername, visibleZellousMarker, discordUsername, discordAttributionTagCount: discordAttributionTags.length, zellousRelayAttribution: parseAttribution(zellousReflection[0].tags), discordReflectionEventId: discordReflection[0].id, zellousEventId: zellous.eventId, discordMessageId: created.id, zellousDiscordMessageId: zellousInDiscord[0].id, bareZellousMarkerCount: bareZellousInDiscord.length, channelCount: afterCount, privilegedIntentsEnabled: expectedPrivileged, degradedFeatures: healthJson.degradedFeatures, liveServicePid, liveServiceCount: processLines.length, duplicateCount: discordReflection.length + zellousReflection.length + zellousInDiscord.length - 3, secretFound: false };
   const output = JSON.stringify(result);
   assert.equal(findSecretPattern(output), null, "secret value in output");
   writeFileSync(join(dir, "text-marker-result.json"), output, { mode: 0o600 });

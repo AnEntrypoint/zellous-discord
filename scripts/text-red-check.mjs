@@ -6,7 +6,11 @@ function assertResult(result) {
   assert.equal(result.ok, true, "missing marker");
   assert.equal(result.root.length, 64, "wrong channel root");
   assert.equal(result.channelCount, 21, "changed channel count");
-  assert.equal(result.privilegedIntentsEnabled, false, "text witness waited for portal approval");
+  assert.equal(typeof result.privilegedIntentsEnabled, "boolean", "missing privileged-intent source of truth");
+  assert.ok(Array.isArray(result.degradedFeatures), "missing degraded feature source of truth");
+  const expectedDegraded = result.privilegedIntentsEnabled ? [] : ["message-content", "presence", "member-list"];
+  for (const feature of expectedDegraded) assert.ok(result.degradedFeatures.includes(feature), "hidden privileged-intent failure");
+  for (const feature of ["message-content", "presence", "member-list"]) if (result.privilegedIntentsEnabled) assert.ok(!result.degradedFeatures.includes(feature), "hidden privileged-intent failure");
   assert.equal(result.liveServicePid.length > 0, true, "missing live service PID");
   assert.equal(result.liveServiceCount ?? 1, 1, "more than one live service");
   assert.ok(result.discordReflectionEventId, "missing Discord-origin relay event");
@@ -26,12 +30,14 @@ function assertResult(result) {
 }
 
 function selfTest() {
-  const base = { ok: true, root: "a".repeat(64), channelCount: 21, privilegedIntentsEnabled: false, discordReflectionEventId: "a", zellousEventId: "b", discordMessageId: "c", zellousDiscordMessageId: "d", discordMarker: "zdb-discord-x", zellousMarker: "zdb-zellous-x", zellousUsername: "zdb-user-x", visibleZellousMarker: "[zdb-user-x] zdb-zellous-x", bareZellousMarkerCount: 0, discordAttributionTagCount: 1, discordUsername: "discord-user", zellousRelayAttribution: "zdb-user-x", liveServicePid: "1", liveServiceCount: 1 };
+  const base = { ok: true, root: "a".repeat(64), channelCount: 21, privilegedIntentsEnabled: false, degradedFeatures: ["message-content", "presence", "member-list"], discordReflectionEventId: "a", zellousEventId: "b", discordMessageId: "c", zellousDiscordMessageId: "d", discordMarker: "zdb-discord-x", zellousMarker: "zdb-zellous-x", zellousUsername: "zdb-user-x", visibleZellousMarker: "[zdb-user-x] zdb-zellous-x", bareZellousMarkerCount: 0, discordAttributionTagCount: 1, discordUsername: "discord-user", zellousRelayAttribution: "zdb-user-x", liveServicePid: "1", liveServiceCount: 1 };
   const cases = [
     [{ ...base, ok: false }, "missing marker"],
     [{ ...base, root: "wrong" }, "wrong channel root"],
     [{ ...base, channelCount: 22 }, "changed channel count"],
-    [{ ...base, privilegedIntentsEnabled: true }, "text witness waited for portal approval"],
+    [{ ...base, privilegedIntentsEnabled: true }, "hidden privileged-intent failure"],
+    [{ ...base, degradedFeatures: [] }, "hidden privileged-intent failure"],
+    [{ ...base, privilegedIntentsEnabled: "yes" }, "missing privileged-intent source of truth"],
     [{ ...base, liveServiceCount: 2 }, "more than one live service"],
     [{ ...base, duplicateCount: 1 }, "duplicate or echoed message"],
     [{ ...base, zellousDiscordMessageId: "" }, "missing Zellous-origin Discord message"],
