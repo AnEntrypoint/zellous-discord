@@ -41,3 +41,5 @@ Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Porta
 One distinct DISCORD_VOICE_TOKENS entry is an insufficient one-identity voice pool. Health and witnesses report voiceTokenCount=1, voicePoolState=insufficient and voiceReadinessReason=VOICE_POOL_INSUFFICIENT, never VOICE_POOL_ABSENT. voiceReflectionComplete stays false and privilegedIntentsEnabled stays false. Only a second distinct installed bot token remains held.
 
 The final gated live window includes voice:proof and voice:proof-red-check. Two distinct installed bot identities must produce real Opus frames in both directions without mixed-audio fallback. Health becomes ok only after voiceReflectionComplete=true, voiceTokenCount=2 and no degraded features remain.
+
+VOICE_PROOF_PASS and voice:proof-red-check prove real Opus frames in both directions with no mixed audio. The final gated live window requires health ok, voiceReflectionComplete=true, voiceTokenCount=2 and no degraded features.
