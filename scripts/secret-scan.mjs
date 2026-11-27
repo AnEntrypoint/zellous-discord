@@ -82,7 +82,7 @@ function selfTest() {
   assert.ok(scanText(syntheticDiscordToken + " " + realShapedDiscordToken).some((finding) => finding.pattern === "discord-token"), "allowlist masks a neighbouring live secret");
   assert.ok(scanText("nsec1" + "q".repeat(32)).some((finding) => finding.pattern === "nsec"), "nsec pattern is weakened");
   assert.ok(scanText("BRIDGE_PRIVATE_KEY_HEX=" + "0".repeat(64)).some((finding) => finding.pattern === "private-key-hex"), "private-key pattern is weakened");
-  console.log("SECRET_SCAN_SELF_TEST_PASS realShape=detected synthetic=ignored nearMiss=detected patterns=3");
+  console.log("SECRET_SCAN_SELF_TEST PASS realShape=detected synthetic=ignored nearMiss=detected patterns=3");
 }
 
 function main() {
