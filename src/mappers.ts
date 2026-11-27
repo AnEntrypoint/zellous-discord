@@ -117,9 +117,10 @@ export function mapDiscordChannelToRoom(channel: DiscordChannelLike, serverId: s
 
 export function mapZellousChannelToRoom(channel: ZellousChannelLike, serverId: string, guildId: string, version = 1): RoomRecord {
   const now = Date.now();
+  const bridgeId = /^room-(\d{17,20})$/.exec(channel.id)?.[1] ?? null;
   return {
-    roomId: "room-" + channel.id,
-    discordId: null,
+    roomId: bridgeId ? "room-" + bridgeId : "room-" + channel.id,
+    discordId: bridgeId,
     zellousId: channel.id,
     serverId,
     guildId,

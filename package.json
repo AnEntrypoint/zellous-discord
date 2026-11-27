@@ -35,6 +35,7 @@
     "cleanup": "node --import tsx src/cli.ts cleanup",
     "cleanup:rollback": "node --import tsx src/cli.ts cleanup-rollback",
     "cleanup:red-check": "node scripts/cleanup-red-check.mjs",
+    "channel-root:red-check": "node scripts/channel-root-red-check.mjs",
     "text:marker": "node scripts/text-marker.mjs",
     "text:red-check": "node scripts/text-red-check.mjs",
     "voice:red-check": "node scripts/voice-red-check.mjs",
