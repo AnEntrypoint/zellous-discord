@@ -1,4 +1,5 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
+import { createHash } from "node:crypto";
 import { createCanonicalEvent } from "../canonical.js";
 import type { Config } from "../config.js";
 import type { Logger } from "../logger.js";
@@ -72,7 +73,7 @@ export class DiscordAdapter implements BridgeAdapter {
       }
     } else if (event.operation === "message.create" || event.operation === "message.correction" || event.operation === "message.attachment") {
       if (message) {
-        const nonce = "zdb-" + (message.zellousEventId ?? event.sourceId);
+        const nonce = "zdb-" + createHash("sha256").update(message.zellousEventId ?? event.sourceId).digest("hex").slice(0, 16);
         this.echo.rememberNonce(nonce);
         const created = await discordRequest(this.config, "POST", "/channels/" + messageChannelId(message, this.mapping) + "/messages", { ...mapMessageToDiscordPayload(message), nonce }) as { id?: string } | null;
         if (created?.id) this.echo.rememberDiscord(String(created.id));
