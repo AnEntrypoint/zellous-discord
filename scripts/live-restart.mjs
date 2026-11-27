@@ -73,13 +73,22 @@ function selfTest() {
 if (process.argv.includes("--self-test")) selfTest();
 else {
   const config = loadConfigFromEnvFile();
-  const oldPid = assertOneService(serviceLines());
-  await stopByPid(oldPid, config.healthPort);
+  const oldLines = serviceLines();
+  assert.ok(oldLines.length > 0, "missing live service");
+  for (const line of oldLines) {
+    const oldPid = Number(line.trim().split(/\s+/)[0]);
+    await stopByPid(oldPid, config.healthPort);
+  }
+  assert.equal(serviceLines().length, 0, "live services did not stop");
+  try {
+    const response = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health", { signal: AbortSignal.timeout(1000) });
+    assert.notEqual(response.status, 200, "live service health still answers after stop");
+  } catch {}
   const child = spawn(process.execPath, ["dist/cli.js", "serve"], { env: { ...process.env }, stdio: "ignore", detached: true });
   child.unref();
   const health = await healthReady(config.healthPort);
   const newPid = assertOneService(serviceLines());
   assert.equal(newPid, child.pid, "live service PID mismatch");
   assert.equal(findSecretPattern(JSON.stringify(health)), null, "secret value in health");
-  console.log("LIVE_RESTART_PASS oldPid=" + String(oldPid) + " newPid=" + String(newPid) + " health=" + health.status);
+  console.log("LIVE_RESTART_PASS stopped=" + String(oldLines.length) + " newPid=" + String(newPid) + " health=" + health.status);
 }
