@@ -2,16 +2,16 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const nl = String.fromCharCode(10);
-const livePin = "f944146955ca886370f3de464865f311998cb25b";
-const previousLivePin = "5d451241587181e471e263f44db993ba8e2d5764";
+const livePin = "a370a9b15d9c3fa916e7312df6682d0a27cc2293";
+const previousLivePin = "f944146955ca886370f3de464865f311998cb25b";
 const devPin = "4508d66ff4cd3fde31959cc8b998810f367be321";
 const liveRelays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol", "wss://relay.snort.social"];
 const liveRelayText = liveRelays.join(",");
 const pagesIndex = "https://anentrypoint.github.io/zellous/nostr-chat/index.html";
 const pagesBridge = "https://anentrypoint.github.io/zellous/js/wireweave-bridge.js";
-const changedFiles = ["src/hub-liveness.js", "src/modules/voice-thread.js", "src/vad/clip-filter.js", "src/vad/detector.js", "src/voice-thread-audio.js", "src/voice.js"];
+const changedFiles = ["src/hub-liveness.js","src/modules/voice-thread.js","src/unread.js","src/vad/clip-filter.js","src/vad/detector.js","src/voice-thread-audio.js","src/voice.js"];
 const allowedDevPinFiles = new Set(["AGENTS.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/SPEC_ALIGNMENT.md", "src/config.ts", "scripts/live-alignment.mjs", "scripts/spec-alignment.mjs", "test/unit/live-alignment.test.ts"]);
-const allowedPreviousPinFiles = new Set(["AGENTS.md", "README.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/RELEASE_NOTES.md", "docs/SPEC_ALIGNMENT.md", "docs/PENDING_VALIDATION.md", "scripts/live-alignment.mjs"]);
+const allowedPreviousPinFiles = new Set(["AGENTS.md", "README.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", "docs/LIVE_PIN_DIFF.md", "docs/RELEASE_NOTES.md", "docs/SPEC_ALIGNMENT.md", "docs/PENDING_VALIDATION.md", "scripts/live-alignment.mjs", "scripts/spec-alignment.mjs"]);
 const requiredVoiceFields = ["relay", "streamId", "src", "muteMs", "unmuteMs", "fragment", "clipSpliced", "relayed", "remoteKeys", "hb", "relays", "hub", "uplinkClass", "presenceLiveMs", "hubLiveness", "linkAlive", "hbAt", "netAt", "jitter", "suspect", "seen", "routeTimer", "routeFor", "myClass", "calmAt", "claim", "cls", "relayMap", "relayTxs"];
 
 function assert(condition, message) {
@@ -141,6 +141,9 @@ function selfTest() {
     ["src/voice/webrtc.ts", " | " + String.fromCharCode(34) + "relay" + String.fromCharCode(34)]
   ]);
   expectThrow(function() { assertProtocolReconciled(["src/unexpected.js"], unresolved); }, "unresolved protocol difference");
+  const quotedRelays = liveRelays.map(function(relay) { return String.fromCharCode(34) + relay + String.fromCharCode(34); }).join(",");
+  const bridge = "state.nostrRelays || [" + quotedRelays + "]";
+  expectThrow(function() { assertLiveArtifacts("wireweave@" + previousLivePin, bridge); }, "stale live Pages pin");
   console.log("LIVE_ALIGNMENT_SELF_TEST_PASS");
 }
 

@@ -2,12 +2,12 @@
 
 This document maps the changed facts checked, architecture and done sections of /config/workspace/hyperagent/specs/discord-bridge.md into the repository contract on 2026-11-26.
 
-Current live GitHub Pages wireweave pin: f944146955ca886370f3de464865f311998cb25b.
+Current live GitHub Pages wireweave pin: a370a9b15d9c3fa916e7312df6682d0a27cc2293.
 Earlier live pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d; it is historical only.
 Previous live pin: 5d451241587181e471e263f44db993ba8e2d5764; it is historical only.
 Retired live pin: 8a4a5002d878e6f849068106a92339f0f6be02dc; it is historical only.
 Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321.
-The six-file protocol drift is reconciled in docs/LIVE_PIN_DIFF.md: src/hub-liveness.js, src/modules/voice-thread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js.
+The seven-file protocol drift is reconciled in docs/LIVE_PIN_DIFF.md: src/hub-liveness.js, src/modules/voice-thread.js, src/unread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js.
 
 The live four-relay default is wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social. ZELLOUS_RELAYS is the optional override; NOSTR_RELAYS is a compatibility alias.
 
