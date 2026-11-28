@@ -93,3 +93,17 @@ The rail logo is not shown today and this bridge cannot make it show. No live cl
 ## Status after deployment
 
 zellous 666ef11 is deployed: Pages serves wireweave 4b73168 (newest kind 34550 event wins, icon tag carried) and the design rail f6df4dd (logo drawn in place of the letter). A fresh-visitor run of source:truth on the live page showed the rail item titled 247420 with an img of class ca-rail-logo whose source is the Discord guild icon URL, and no Discord Bridge text anywhere on the page. The same run recorded per-relay warnings: relay.damus.io answers nothing and nos.lol still holds the old Discord Bridge event with no logo; they do not change what a client shows because the newest event wins. The rail does not list four Discord channels (forum-discussion, ideas-that-might-heal-your-soul, ideas-that-will-ruin-my-life, longpost-longhouse) although the client channel state has all 22; that is reported as a client warning.
+
+## Why the rail lists 18 of 22 channels, and the exact change
+
+The client state holds all 22 records, but the four Discord forum channels (longpost-longhouse, ideas-that-will-ruin-my-life, forum-discussion, ideas-that-might-heal-your-soul; Discord type 15, published by the bridge as type forum) never reach the rail. The zellous rail adapter keeps only channel types whose module declares the inRail trait (docs/js/adapter/rail.js lines 20 and 25: `filter((c) => c && trait(c.type, 'inRail'))`), and the forum module declares only forumPosts and members. Zellous docs/PENDING_VALIDATION.md line 931 records this as a deliberate game-3 parity choice ("no forum or threaded row"). The design rail is already ready: design f6df4dd src/modules/builtin/channel-types.js line 14 registers forum in the text group with a forum body, so no design change is needed. The bridge publishes the right type and nothing in it hides these channels.
+
+Repository and file: AnEntrypoint/zellous, docs/js/modules/channel-types/index.js, the type-forum module.
+
+```diff
+-    type: 'forum', label: 'Forum', traits: { forumPosts: true, members: true },
++    type: 'forum', label: 'Forum', traits: { inRail: true, forumPosts: true, members: true },
+```
+
+Executed on the live page (fresh visitor, joined to the server): setting the forum channel type's inRail trait to true in the loaded module registry and re-rendering made all four forum channels appear in the page, where before the same page showed none of them (before: inRail undefined and four names absent; after: inRail true and four names present). The change is one line; threaded channels carry the same omission and are not used by this guild. The witness fails on a short rail: source:truth records rail.mapped, rail.listed and rail.missing, prints SOURCE_RAIL_SHORT and exits 1 after writing its result, and source:red-check fails with "short rail" until the rail lists every mapped channel.
+

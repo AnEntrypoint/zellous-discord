@@ -45,6 +45,9 @@ function assertSource(result, log) {
   assert.equal(channels.discordRest.length, 22, "changed channel count");
   assert.equal(result.channelCount, 22, "changed channel count");
   for (const name of requiredChannelNames) assert.ok(channels.browserDomVisible.includes(name), "browser DOM missing channel " + name);
+  assert.ok(result.rail && Array.isArray(result.rail.missing), "rail result missing");
+  assert.equal(result.rail.listed, result.rail.mapped, "short rail: the live client rail lists " + String(result.rail?.listed) + " of " + String(result.rail?.mapped) + " channels");
+  assert.deepEqual(result.rail.missing, [], "short rail: the live client rail does not list " + String((result.rail?.missing ?? []).join(",")));
   assert.equal(findSecretPattern(JSON.stringify(result)), null, "secret value in evidence");
   assert.ok(!String(log).includes("Cannot read properties of null (reading 'userId')"), "nullable presence error remains");
   assert.ok(!String(log).includes("Presence: unknown status"), "degraded presence remains");
@@ -57,7 +60,7 @@ function selfTest() {
   const relayMetadata = { "wss://a": { name: "247420", icon }, "wss://b": { name: "Discord Bridge", icon: "" }, "wss://c": null };
   const warnings = [{ surface: "relay", relay: "wss://b", message: "serves name Discord Bridge" }, { surface: "relay", relay: "wss://c", message: "serves no server metadata" }, { surface: "client", message: "the live client rail draws no guild logo" }];
   const browser = { url: "https://anentrypoint.github.io/zellous/nostr-chat/", sendPath: "live-zellous-ui", cachedOnly: false, steps: ["eval", "url", "wait", "eval", "screenshot"], firstSteps: ["eval", "url"], secondSteps: ["eval"], firstBody: "eval=clear\nurl=https://anentrypoint.github.io/zellous/nostr-chat/\nscreenshot=source-discover.png", secondBody: "eval=evidence", screenshot: "source-discover.png" };
-  const base = { ok: true, owner: OWNER_HEX, serverId: "server", surfaces: { discordRest: "247420", relayMetadata: "247420", relayListing: "247420", cachedServers: "247420" }, iconSurfaces: { discordRest: icon, relayMetadata: icon, relayListing: icon, cachedServers: icon }, relayMetadata, accepting: ["wss://a", "wss://b"], staleRelays: ["wss://b"], silentRelays: ["wss://c"], warnings, liveClient: { nameShown: true, railLogoRendered: false, staleNamePresent: false }, channelSurfaces: { discordRest: channelNames, relaySnapshot: channelNames, cachedChannelMap: channelNames, browserDomVisible: channelNames }, voiceSurfaces: { discordRest: voiceNames, browserDom: voiceNames, headingVisible: true }, channelCount: 22, liveServiceCount: 1, liveServicePid: "1", browser };
+  const base = { ok: true, owner: OWNER_HEX, serverId: "server", surfaces: { discordRest: "247420", relayMetadata: "247420", relayListing: "247420", cachedServers: "247420" }, iconSurfaces: { discordRest: icon, relayMetadata: icon, relayListing: icon, cachedServers: icon }, relayMetadata, accepting: ["wss://a", "wss://b"], staleRelays: ["wss://b"], silentRelays: ["wss://c"], warnings, liveClient: { nameShown: true, railLogoRendered: false, staleNamePresent: false }, rail: { mapped: 22, listed: 22, missing: [] }, channelSurfaces: { discordRest: channelNames, relaySnapshot: channelNames, cachedChannelMap: channelNames, browserDomVisible: channelNames }, voiceSurfaces: { discordRest: voiceNames, browserDom: voiceNames, headingVisible: true }, channelCount: 22, liveServiceCount: 1, liveServicePid: "1", browser };
   assertSource(base, "");
   const cases = [
     [{ ...base, owner: "wrong" }, "", "wrong author did not fail"],
@@ -85,6 +88,8 @@ function selfTest() {
     [{ ...base, channelSurfaces: { ...base.channelSurfaces, cachedChannelMap: ["inference"] } }, "", "cached channel disagreement did not fail"],
     [{ ...base, channelSurfaces: { ...base.channelSurfaces, browserDomVisible: ["inference"] } }, "", "missing DOM channel did not fail"],
     [{ ...base, channelCount: 21 }, "", "changed channel count did not fail"],
+    [{ ...base, rail: { mapped: 22, listed: 18, missing: ["forum-discussion", "ideas-that-might-heal-your-soul", "ideas-that-will-ruin-my-life", "longpost-longhouse"] } }, "", "short rail did not fail"],
+    [{ ...base, rail: undefined }, "", "missing rail result did not fail"],
     [base, "Presence: unknown status", "degraded presence did not fail"],
     [base, "Cannot read properties of null (reading 'userId')", "nullable presence did not fail"],
     [{ ...base, token: syntheticDiscordToken }, "", "secret value did not fail"]
