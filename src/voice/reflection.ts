@@ -71,6 +71,10 @@ export class VoiceReflection {
         if (event.source === "discord") await this.releaseDiscordHuman(userId);
         return;
       }
+      if (!/^[0-9]{17,20}$/.test(voice.channelId)) {
+        this.logger.warn("voice channel is not a Discord snowflake", { channelId: voice.channelId, humanUserId: userId });
+        return;
+      }
       if (event.source === "discord") await this.holdDiscordHuman(userId, voice.channelId);
       const joined = await this.discordPool.join(this.config.discordGuildId, voice.channelId, userId, (identity, frame) => this.acceptDiscordFrame(identity, frame));
       if (!joined) {

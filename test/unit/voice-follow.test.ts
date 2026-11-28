@@ -9,7 +9,7 @@ import { Logger } from "../../src/logger.js";
 import { VoiceReflection } from "../../src/voice/reflection.js";
 
 function voiceEvent(operation: "voice.join" | "voice.leave", voice: Record<string, unknown>, version: number) {
-  return createCanonicalEvent({ schemaVersion: 1, source: "discord", sourceId: String(voice.userId), operation, version, occurredAt: version, actor: { source: "discord", sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null }, room: null, payload: { voice }, suppressionKey: null, tracing: ["discord"] });
+  return createCanonicalEvent({ schemaVersion: 1, source: String(voice.userId).startsWith("zellous:") ? "zellous" : "discord", sourceId: String(voice.userId), operation, version, occurredAt: version, actor: { source: String(voice.userId).startsWith("zellous:") ? "zellous" : "discord", sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null }, room: null, payload: { voice }, suppressionKey: null, tracing: ["discord"] } as never);
 }
 
 function reflection(tokens: string) {
@@ -57,4 +57,14 @@ test("a probed pool skips invalid and duplicate voice tokens", async function() 
     assert.equal(pool.usableCount(), 1);
     assert.equal(pool.invalidIdentityCount(), 2);
   } finally { globalThis.fetch = original; }
+});
+
+test("a stale non-snowflake voice channel never reaches the pool", async function() {
+  const { instance, lines } = reflection("token-a");
+  await instance.start();
+  await instance.ingest(voiceEvent("voice.join", { userId: "zellous:" + "a".repeat(64), guildId: "367741339393327104", channelId: "discord-room-1283057471031738379", bot: false }, 9));
+  await new Promise<void>(function(resolve) { setTimeout(resolve, 50); });
+  assert.ok(lines.some(function(line) { return line.includes("voice channel is not a Discord snowflake"); }));
+  assert.ok(!lines.some(function(line) { return line.includes("voice bot join failed"); }));
+  await instance.stop();
 });

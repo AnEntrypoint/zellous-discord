@@ -96,7 +96,7 @@ export class NostrAdapter implements BridgeAdapter {
   }
 
   private voiceRooms(): VoiceRoomRef[] {
-    return this.mapping.allRooms().filter((room) => room.type === "voice" && room.discordId && room.name).map((room) => ({ roomId: zellousVoiceRoomId(this.serverId, room.name), channelName: room.name, discordId: String(room.discordId) }));
+    return this.mapping.allRooms().filter((room) => room.type === "voice" && /^[0-9]{17,20}$/.test(String(room.discordId ?? "")) && room.name).map((room) => ({ roomId: zellousVoiceRoomId(this.serverId, room.name), channelName: room.name, discordId: String(room.discordId) }));
   }
 
   private voiceEvent(transition: PresenceTransition): CanonicalEvent {
