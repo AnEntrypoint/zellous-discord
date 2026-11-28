@@ -14,7 +14,7 @@ const windows = {
     npm("cleanup:red-check", "--", "--self-test"), npm("channel-root:red-check", "--", "--self-test"),
     npm("text:red-check", "--", "--self-test"), npm("voice:red-check", "--", "--self-test"),
     npm("live:restart", "--", "--self-test"), npm("ui:marker-red-check", "--", "--self-test"),
-    npm("voice:red-check"), npm("secret:scan"), npm("secret:red-check"), npm("serve:check"),
+    npm("voice:red-check"), npm("voice:bridge", "--", "--self-test"), npm("relay:heal", "--", "--self-test"), npm("secret:scan"), npm("secret:red-check"), npm("serve:check"),
     ["git", ["check-ignore", "-v", ".env"]]
   ],
   b: [

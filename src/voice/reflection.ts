@@ -104,6 +104,10 @@ export class VoiceReflection {
     return voiceReadiness(this.config, this.proof);
   }
 
+  sessions(): Array<{ identity: string; botUserId: string; channelId: string; humanCount: number }> {
+    return this.discordPool.boundIdentities().map(function(session) { return { identity: session.identity, botUserId: session.botUserId, channelId: session.channelId, humanCount: session.humanUserIds.length }; });
+  }
+
   proofState(): VoiceProof {
     return { ...this.proof };
   }

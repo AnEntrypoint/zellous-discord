@@ -44,6 +44,8 @@
     "text:marker": "node scripts/text-marker.mjs",
     "text:red-check": "node scripts/text-red-check.mjs",
     "voice:red-check": "node scripts/voice-red-check.mjs",
+    "relay:heal": "node scripts/relay-heal.mjs",
+    "voice:bridge": "node scripts/voice-bridge-check.mjs",
     "voice:proof": "node scripts/voice-proof.mjs",
     "voice:proof-red-check": "node scripts/voice-proof-red-check.mjs",
     "final:window": "node scripts/final-window.mjs",

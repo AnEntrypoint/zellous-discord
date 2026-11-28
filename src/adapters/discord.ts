@@ -125,6 +125,8 @@ export class DiscordAdapter implements BridgeAdapter {
     client.on(Events.Error, async (error: Error) => { this.logger.error("discord gateway error", { message: error.message }); });
     await client.login(this.config.discordToken.reveal());
     if (client.isReady()) ready = true;
+    const guild = client.guilds.cache.get(this.config.discordGuildId);
+    for (const state of guild?.voiceStates.cache.values() ?? []) if (state.channelId && !state.member?.user?.bot) await publish(this.voiceEvent(state));
     return async () => { client.destroy(); this.client = null; };
   }
 

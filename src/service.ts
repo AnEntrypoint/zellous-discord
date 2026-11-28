@@ -95,6 +95,7 @@ export class BridgeService {
       voiceReadinessReason: readiness?.reason ?? "UNINITIALIZED",
       voiceIdentityCount: readiness?.identityCount ?? 0,
       voiceFrameCount: readiness?.frameCount ?? 0,
+      voiceSessions: this.voice ? this.voice.sessions() : [],
       rooms: state?.rooms.size ?? 0,
       messages: state?.messages.size ?? 0,
       suppressions: state?.suppressions.size ?? 0,
