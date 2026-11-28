@@ -19,11 +19,11 @@ function serviceLines() {
   return execFileSync("ps", ["-eo", "pid,args"], { encoding: "utf8" }).split(nl).filter(function(line) { return line.indexOf("dist/cli.js serve") >= 0; });
 }
 
-async function queryEvents(config, owner, d) {
+async function queryEvents(config, owner, d, relays = config.nostrRelays) {
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const timeout = new Promise(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
-  try { return await Promise.race([pool.querySync(config.nostrRelays, { kinds: d.startsWith("discord-") ? [34550] : [30078], authors: [owner], "#d": [d], limit: 20 }, { maxWait: 10000 }), timeout]); } finally { pool.destroy(); }
+  try { return await Promise.race([pool.querySync(relays, { kinds: d.startsWith("discord-") ? [34550] : [30078], authors: [owner], "#d": [d], limit: 20 }, { maxWait: 10000 }), timeout]); } finally { pool.destroy(); }
 }
 
 function sortedNames(values) {
@@ -67,6 +67,16 @@ async function main() {
   for (const event of [metadataEvent, listingEvent, snapshotEvent]) assert.equal(event.pubkey, owner, "wrong owner signature");
   const metadataName = String((metadataEvent.tags.find(function(tag) { return tag[0] === "name"; }) || [])[1] ?? "");
   const metadataIcon = String((metadataEvent.tags.find(function(tag) { return tag[0] === "icon"; }) || [])[1] ?? "");
+  const relayMetadata = {};
+  for (const relay of config.nostrRelays) {
+    const events = (await queryEvents(config, owner, config.zellousServerDTag, [relay])).sort(function(a, b) { return b.created_at - a.created_at; });
+    const newest = events[0];
+    relayMetadata[relay] = newest ? { name: String((newest.tags.find(function(tag) { return tag[0] === "name"; }) || [])[1] ?? ""), icon: String((newest.tags.find(function(tag) { return tag[0] === "icon"; }) || [])[1] ?? "") } : null;
+  }
+  const staleRelays = Object.entries(relayMetadata).filter(function([, value]) { return value !== null && (value.name !== discordName || value.icon !== discordIcon); }).map(function([relay]) { return relay; });
+  const silentRelays = Object.entries(relayMetadata).filter(function([, value]) { return value === null; }).map(function([relay]) { return relay; });
+  assert.deepEqual(staleRelays, [], "relay serves a stale server name or logo: " + staleRelays.join(","));
+  assert.ok(silentRelays.length < config.nostrRelays.length, "no relay serves the server metadata");
   const listing = JSON.parse(listingEvent.content);
   const listingName = String(listing.name ?? "");
   const listingIcon = String(listing.icon ?? "");
@@ -123,7 +133,7 @@ async function main() {
   assert.deepEqual(cachedChannelMap, discordRest, "cached channel map disagrees with Discord REST");
   assert.equal(discordRest.length, 22, "changed channel count");
   for (const name of requiredChannelNames) assert.ok(browserDomVisible.includes(name), "browser DOM missing channel " + name);
-  const output = JSON.stringify({ ok: true, owner, serverId, surfaces, iconSurfaces, channelSurfaces: { discordRest, relaySnapshot, cachedChannelMap, browserDomVisible }, voiceSurfaces: { discordRest: discordVoice, browserDom: browserVoice, headingVisible: evidence.voiceChannelHeadingVisible }, channelCount: discordRest.length, liveServiceCount: lines.length, liveServicePid, browser: { url: String(evidence.url), sendPath: evidence.browserSendPath, cachedOnly: evidence.browserCachedOnly, domServerNameSource: evidence.domServerNameSource, steps: evidence.browserSteps, firstSteps: evidence.browserFirstSteps, secondSteps: evidence.browserSecondSteps, firstBody: evidence.browserFirstBody, secondBody: evidence.browserSecondBody, screenshot: steps.screenshot }, sourceEvidenceAt: evidence.evidenceAt });
+  const output = JSON.stringify({ ok: true, owner, serverId, surfaces, iconSurfaces, relayMetadata, staleRelays, silentRelays, channelSurfaces: { discordRest, relaySnapshot, cachedChannelMap, browserDomVisible }, voiceSurfaces: { discordRest: discordVoice, browserDom: browserVoice, headingVisible: evidence.voiceChannelHeadingVisible }, channelCount: discordRest.length, liveServiceCount: lines.length, liveServicePid, browser: { url: String(evidence.url), sendPath: evidence.browserSendPath, cachedOnly: evidence.browserCachedOnly, domServerNameSource: evidence.domServerNameSource, steps: evidence.browserSteps, firstSteps: evidence.browserFirstSteps, secondSteps: evidence.browserSecondSteps, firstBody: evidence.browserFirstBody, secondBody: evidence.browserSecondBody, screenshot: steps.screenshot }, sourceEvidenceAt: evidence.evidenceAt });
   assert.equal(findSecretPattern(output), null, "secret value in source-of-truth output");
   writeFileSync("data/source-truth.json", output, { mode: 0o600 });
   writeFileSync(join(scratchDir, "discover-evidence.txt"), ["DISCOVER_CARD_VISIBLE: live Zellous chat shows server 247420 with #inference and #warez-and-wonders in the channel list.", "JOIN_OK: serverId=" + serverId, "CHANNELS_OK: channelCount=22 rulesPage=Rules channelNames=" + discordRest.join(","), "CHAT_OK: bridged Discord-origin and Zellous-origin messages are visible in #warez-and-wonders live DOM", "SERVER_NAME_OK: name=247420 staleName=0 source=playwriter browser DOM", "LOGO_OK: source=cdn.discordapp.com/icons/" + config.discordGuildId + "/" + guildIconHash + ".png", "VOICE_BRIDGE_OK: headingVisible=true channels=" + discordVoice.join(","), "SCREENSHOT=" + steps.screenshot, ""].join(nl), { mode: 0o600 });

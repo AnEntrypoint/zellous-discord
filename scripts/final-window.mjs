@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 const scratch = process.env.HYPERAGENT_SCRATCH || "/config/workspace/tmp";
@@ -47,12 +47,16 @@ const commands = [
   ["git", ["check-ignore", "-v", ".env"]]
 ];
 
-let code = 0;
-try {
+function checkEvidence() {
   const evidence = readFileSync(evidencePath, "utf8");
   for (const marker of ["DISCOVER_CARD_VISIBLE", "JOIN_OK", "CHANNELS_OK", "CHAT_OK", "SERVER_NAME_OK", "LOGO_OK", "VOICE_BRIDGE_OK"]) if (evidence.indexOf(marker) < 0) throw new Error("browser evidence incomplete: " + marker);
   if (evidence.includes("Discord Bridge")) throw new Error("stale browser server name");
   if (!evidence.includes("247420")) throw new Error("live guild name missing from browser evidence");
+}
+
+let code = 0;
+try {
+  rmSync(evidencePath, { force: true });
   if (process.env.GATE_TREE) {
     const head = execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
     if (process.env.GATE_TREE !== head) throw new Error("gate tree differs from worktree");
@@ -60,6 +64,7 @@ try {
   for (const [command, args] of commands) {
     console.log("WITNESS " + command + " " + args.join(" "));
     execFileSync(command, args, { stdio: "inherit" });
+    if (args.includes("source:truth")) checkEvidence();
   }
 } catch (error) {
   code = typeof error.status === "number" ? error.status : 1;

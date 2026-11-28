@@ -11,10 +11,20 @@ interface DiscordVoiceSession {
   stream: PassThrough;
   userId: string;
   identity: string;
+  channelId: string;
+  humanUserId: string;
+}
+
+export interface VoiceJoinResult {
+  identity: string;
+  botUserId: string;
+  channelId: string;
+  moved: boolean;
 }
 
 export class DiscordVoicePool {
   private readonly sessions = new Map<string, DiscordVoiceSession>();
+  private readonly clients = new Map<number, Client>();
 
   constructor(private readonly config: Config) {}
 
@@ -22,27 +32,68 @@ export class DiscordVoicePool {
     return this.config.voiceTokens.length;
   }
 
+  private async clientFor(index: number): Promise<Client> {
+    const existing = this.clients.get(index);
+    if (existing) return existing;
+    const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+    await client.login(this.config.voiceTokens[index].reveal());
+    this.clients.set(index, client);
+    return client;
+  }
+
+  private sessionFor(humanUserId: string): DiscordVoiceSession | undefined {
+    for (const session of this.sessions.values()) if (session.humanUserId === humanUserId) return session;
+    return undefined;
+  }
+
+  private freeIndex(): number {
+    const used = new Set(Array.from(this.sessions.keys()));
+    for (let index = 0; index < this.config.voiceTokens.length; index += 1) if (!used.has("voice-bot-" + String(index + 1))) return index;
+    return -1;
+  }
+
+  async join(guildId: string, channelId: string, humanUserId: string, onFrame: (identity: string, frame: VoiceFrame) => void): Promise<VoiceJoinResult | null> {
+    const bound = this.sessionFor(humanUserId);
+    const index = bound ? Number(bound.identity.replace("voice-bot-", "")) - 1 : this.freeIndex();
+    if (index < 0) return null;
+    const identity = "voice-bot-" + String(index + 1);
+    if (bound && bound.channelId === channelId) return { identity, botUserId: bound.userId, channelId, moved: false };
+    const client = await this.clientFor(index);
+    const guild = await client.guilds.fetch(guildId);
+    const connection = joinVoiceChannel({ channelId, guildId, adapterCreator: guild.voiceAdapterCreator, selfMute: false, selfDeaf: false });
+    await entersState(connection, VoiceConnectionStatus.Ready, 15000);
+    const stream = new PassThrough();
+    const player = createAudioPlayer();
+    player.play(createAudioResource(stream, { inputType: StreamType.Opus }));
+    connection.subscribe(player);
+    const session: DiscordVoiceSession = { client, connection, player, stream, userId: String(client.user?.id ?? ""), identity, channelId, humanUserId };
+    this.sessions.set(identity, session);
+    this.subscribe(identity, humanUserId, function(frame: VoiceFrame) { onFrame(identity, frame); });
+    return { identity, botUserId: session.userId, channelId, moved: Boolean(bound) };
+  }
+
   async start(guildId: string, channelId: string): Promise<void> {
     for (let index = 0; index < this.config.voiceTokens.length; index += 1) {
       const identity = "voice-bot-" + String(index + 1);
-      const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
-      await client.login(this.config.voiceTokens[index].reveal());
+      const client = await this.clientFor(index);
       const guild = await client.guilds.fetch(guildId);
-      const connection = joinVoiceChannel({
-        channelId,
-        guildId,
-        adapterCreator: guild.voiceAdapterCreator,
-        selfMute: false,
-        selfDeaf: false
-      });
+      const connection = joinVoiceChannel({ channelId, guildId, adapterCreator: guild.voiceAdapterCreator, selfMute: false, selfDeaf: false });
       await entersState(connection, VoiceConnectionStatus.Ready, 10000);
       const stream = new PassThrough();
-      const resource = createAudioResource(stream, { inputType: StreamType.Opus });
       const player = createAudioPlayer();
-      player.play(resource);
+      player.play(createAudioResource(stream, { inputType: StreamType.Opus }));
       connection.subscribe(player);
-      this.sessions.set(identity, { client, connection, player, stream, userId: String(client.user?.id ?? ""), identity });
+      this.sessions.set(identity, { client, connection, player, stream, userId: String(client.user?.id ?? ""), identity, channelId, humanUserId: "" });
     }
+  }
+
+  leave(humanUserId: string): string | null {
+    const session = this.sessionFor(humanUserId);
+    if (!session) return null;
+    session.stream.end();
+    session.connection.destroy();
+    this.sessions.delete(session.identity);
+    return session.identity;
   }
 
   subscribe(identity: string, userId: string, onFrame: (frame: VoiceFrame) => void): void {
@@ -79,12 +130,17 @@ export class DiscordVoicePool {
     return Array.from(this.sessions.keys());
   }
 
+  boundIdentities(): Array<{ identity: string; botUserId: string; channelId: string; humanUserId: string }> {
+    return Array.from(this.sessions.values()).map((session) => ({ identity: session.identity, botUserId: session.userId, channelId: session.channelId, humanUserId: session.humanUserId }));
+  }
+
   async close(): Promise<void> {
     for (const session of this.sessions.values()) {
       session.stream.end();
       session.connection.destroy();
-      session.client.destroy();
     }
     this.sessions.clear();
+    for (const client of this.clients.values()) client.destroy();
+    this.clients.clear();
   }
 }

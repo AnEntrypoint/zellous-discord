@@ -17,6 +17,7 @@ export interface OwnerBundleEvent {
   dTag: string;
   createdAt: number;
   accepted: number;
+  rejected: Record<string, string>;
 }
 
 export interface OwnerBundlePublication {
@@ -82,11 +83,32 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
   const pool = new SimplePool({ enableReconnect: true });
   const published: OwnerBundleEvent[] = [];
   for (const event of events) {
-    const promises = pool.publish(config.nostrRelays, event);
-    const timeout = new Promise<PromiseSettledResult<unknown>[]>(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
-    const settled = await Promise.race<PromiseSettledResult<unknown>[]>([Promise.allSettled(promises), timeout]);
+    const accepted = new Set<string>();
+    const rejected = new Map<string, string>();
+    const dTag = (event.tags.find(function(tag: string[]) { return tag[0] === "d"; }) || [])[1] ?? "";
+    for (const relay of config.nostrRelays) {
+      const timeoutCurrent = new Promise<any[]>(function(resolve) { setTimeout(function() { resolve([]); }, 8000); });
+      const current = await Promise.race<any[]>([pool.querySync([relay], { kinds: [event.kind], authors: [event.pubkey], "#d": [dTag], limit: 5 }, { maxWait: 6000 }).catch(function() { return []; }), timeoutCurrent]);
+      const newest = current.sort(function(a: any, b: any) { return b.created_at - a.created_at; })[0];
+      const wanted = JSON.stringify(event.tags) + event.content;
+      if (newest && JSON.stringify(newest.tags) + newest.content === wanted) accepted.add(relay);
+    }
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const pending = config.nostrRelays.filter(function(url) { return !accepted.has(url); });
+      if (pending.length === 0) break;
+      if (attempt > 0) await new Promise<void>(function(resolve) { setTimeout(resolve, 15000); });
+      const promises = pool.publish(pending, event);
+      const timeout = new Promise<PromiseSettledResult<unknown>[]>(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
+      const settled = await Promise.race<PromiseSettledResult<unknown>[]>([Promise.allSettled(promises), timeout]);
+      settled.forEach(function(entry, index) {
+        if (entry.status === "fulfilled") { accepted.add(pending[index]); rejected.delete(pending[index]); }
+        else rejected.set(pending[index], String((entry as PromiseRejectedResult).reason?.message ?? (entry as PromiseRejectedResult).reason ?? "rejected"));
+      });
+      const retryable = [...rejected.values()].some(function(reason) { return /rate-limited/i.test(reason); });
+      if (!retryable) break;
+    }
     const d = (event.tags.find(function(tag: string[]) { return tag[0] === "d"; }) || [])[1] ?? "";
-    published.push({ kind: event.kind, eventId: event.id, dTag: d, createdAt: event.created_at, accepted: settled.filter(function(entry) { return entry.status === "fulfilled"; }).length });
+    published.push({ kind: event.kind, eventId: event.id, dTag: d, createdAt: event.created_at, accepted: accepted.size, rejected: Object.fromEntries(rejected) });
   }
   pool.destroy();
   mkdirSync(config.bridgeStateDir, { recursive: true, mode: 0o700 });

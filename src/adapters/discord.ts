@@ -121,7 +121,7 @@ export class DiscordAdapter implements BridgeAdapter {
       if (!presence) return;
       await publish(this.presenceEvent(presence));
     });
-    client.on(Events.VoiceStateUpdate, async (state: any) => { await publish(this.voiceEvent(state)); });
+    client.on(Events.VoiceStateUpdate, async (oldState: any, newState: any) => { const state = newState ?? oldState; if (!state) return; if (oldState?.channelId === newState?.channelId) return; await publish(this.voiceEvent(state)); });
     client.on(Events.Error, async (error: Error) => { this.logger.error("discord gateway error", { message: error.message }); });
     await client.login(this.config.discordToken.reveal());
     if (client.isReady()) ready = true;
@@ -257,7 +257,7 @@ export class DiscordAdapter implements BridgeAdapter {
       occurredAt: Date.now(),
       actor: bridgeActor(),
       room: null,
-      payload: { voice: { channelId: state.channelId ?? null, muted: Boolean(state.mute), deafened: Boolean(state.deaf), speaking: false } },
+      payload: { voice: { userId: String(state.id ?? state.member?.user?.id ?? ""), guildId: String(state.guild?.id ?? ""), bot: Boolean(state.member?.user?.bot), channelId: state.channelId ?? null, muted: Boolean(state.mute), deafened: Boolean(state.deaf), speaking: false } },
       suppressionKey: null,
       tracing: [this.source]
     });

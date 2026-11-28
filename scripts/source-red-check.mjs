@@ -23,6 +23,9 @@ function assertSource(result, evidence, log) {
     assert.equal(icon, result.iconSurfaces.discordRest, surface + " guild logo disagrees");
     assert.ok(String(icon).startsWith(iconPrefix), surface + " guild logo is static or missing");
   }
+  assert.deepEqual(result.staleRelays, [], "relay serves a stale server name or logo");
+  assert.ok(result.silentRelays.length < Object.keys(result.relayMetadata).length, "no relay serves the server metadata");
+  for (const [relay, value] of Object.entries(result.relayMetadata)) if (value !== null) assert.equal(value.name, result.surfaces.discordRest, relay + " serves a stale server name");
   assert.equal(result.voiceSurfaces.headingVisible, true, "Zellous voice bridge heading hidden");
   assert.ok(result.voiceSurfaces.discordRest.length > 0, "Discord voice bridge hidden");
   assert.deepEqual(result.voiceSurfaces.browserDom, result.voiceSurfaces.discordRest, "Zellous voice bridge disagrees with Discord");
@@ -64,7 +67,8 @@ function selfTest() {
   const iconSurfaces = { discordRest: icon, relayMetadata: icon, relayListing: icon, cachedServers: icon, browserDom: icon };
   const voiceSurfaces = { discordRest: voiceNames, browserDom: voiceNames, headingVisible: true };
   const browser = { url: "https://anentrypoint.github.io/zellous/nostr-chat/", sendPath: "live-zellous-ui", cachedOnly: false, domServerNameSource: "dom-body-text", steps: ["eval", "wait", "eval", "screenshot"], firstSteps: ["eval", "screenshot"], secondSteps: ["eval"], firstBody: "eval=join\nscreenshot=source-discover.png", secondBody: "eval=evidence", screenshot: "source-discover.png" };
-  const base = { ok: true, owner: OWNER_HEX, serverId: "server", surfaces: { discordRest: "247420", relayMetadata: "247420", relayListing: "247420", cachedServers: "247420", browserDom: "247420" }, iconSurfaces, channelSurfaces: { discordRest: channelNames, relaySnapshot: channelNames, cachedChannelMap: channelNames, browserDomVisible: channelNames }, voiceSurfaces, channelCount: 22, liveServiceCount: 1, liveServicePid: "1", browser };
+  const relayMetadata = { "wss://a": { name: "247420", icon }, "wss://b": null };
+  const base = { ok: true, owner: OWNER_HEX, serverId: "server", relayMetadata, staleRelays: [], silentRelays: ["wss://b"], surfaces: { discordRest: "247420", relayMetadata: "247420", relayListing: "247420", cachedServers: "247420", browserDom: "247420" }, iconSurfaces, channelSurfaces: { discordRest: channelNames, relaySnapshot: channelNames, cachedChannelMap: channelNames, browserDomVisible: channelNames }, voiceSurfaces, channelCount: 22, liveServiceCount: 1, liveServicePid: "1", browser };
   const evidence = { serverName: "247420", domServerName: "247420", domServerNameSource: "dom-body-text", domServerIcon: icon, domStaleNamePresent: false, staleNamePresent: false, browserCachedOnly: false, browserSendPath: "live-zellous-ui", voiceChannelHeadingVisible: true, visibleVoiceChannelNames: voiceNames };
   assertSource(base, evidence, "");
   const cases = [
@@ -77,6 +81,9 @@ function selfTest() {
     [{ ...base, iconSurfaces: { ...iconSurfaces, cachedServers: "https://example.com/icon.png" } }, evidence, "", "stale cached logo did not fail"],
     [{ ...base, iconSurfaces: { ...iconSurfaces, browserDom: "https://example.com/icon.png" } }, evidence, "", "missing browser logo did not fail"],
     [{ ...base, iconSurfaces: undefined }, evidence, "", "missing logo surfaces did not fail"],
+    [{ ...base, relayMetadata: { ...relayMetadata, "wss://b": { name: "Discord Bridge", icon: "" } }, staleRelays: ["wss://b"] }, evidence, "", "stale relay copy did not fail"],
+    [{ ...base, relayMetadata: { ...relayMetadata, "wss://b": { name: "Discord Bridge", icon: "" } } }, evidence, "", "stale relay name did not fail"],
+    [{ ...base, relayMetadata: { "wss://a": null, "wss://b": null }, silentRelays: ["wss://a", "wss://b"] }, evidence, "", "no relay serving metadata did not fail"],
     [{ ...base, voiceSurfaces: { ...voiceSurfaces, headingVisible: false } }, evidence, "", "hidden voice bridge heading did not fail"],
     [{ ...base, voiceSurfaces: { ...voiceSurfaces, discordRest: [] } }, evidence, "", "hidden Discord voice bridge did not fail"],
     [{ ...base, voiceSurfaces: { ...voiceSurfaces, browserDom: [] } }, evidence, "", "hidden Zellous voice bridge did not fail"],
