@@ -70,7 +70,7 @@
     "nostr-tools": "2.26.1",
     "opusscript": "0.0.8",
     "werift": "0.28.0",
-    "wireweave": "github:AnEntrypoint/wireweave#115f7da3034a79662887fc4a45d3c3b1224bb43a",
+    "wireweave": "github:AnEntrypoint/wireweave#4b73168fbfbb2f13f11e56e368244166955f6af2",
     "ws": "8.23.0",
     "xstate": "5.33.4",
     "zod": "4.6.7"

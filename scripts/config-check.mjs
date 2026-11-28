@@ -14,7 +14,7 @@ assert.equal(config.privilegedIntentsEnabled, false);
 const live = loadConfigFromEnvFile();
 assert.equal(live.privilegedIntentsEnabled, true);
 assert.equal(live.voiceTokens.length, 2);
-assert.equal(LIVE_WIREWEAVE_PIN, "115f7da3034a79662887fc4a45d3c3b1224bb43a");
+assert.equal(LIVE_WIREWEAVE_PIN, "4b73168fbfbb2f13f11e56e368244166955f6af2");
 assert.equal(OWNER_HEX, "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711");
 assert.equal(REQUIRED_SERVER_ID, OWNER_HEX + ":discord-367741339393327104");
 

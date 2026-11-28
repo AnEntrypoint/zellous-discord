@@ -5,6 +5,7 @@ const docs = ["docs/SPEC_ALIGNMENT.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", 
 const texts = new Map(docs.map(function(file) { return [file, readFileSync(file, "utf8")]; }));
 const all = [...texts.values()].join(String.fromCharCode(10));
 const needles = [
+  "4b73168fbfbb2f13f11e56e368244166955f6af2",
   "115f7da3034a79662887fc4a45d3c3b1224bb43a",
   "a370a9b15d9c3fa916e7312df6682d0a27cc2293",
   "f944146955ca886370f3de464865f311998cb25b",
@@ -71,7 +72,7 @@ function selfTest() {
   try { assertAlignment(all.split("I reported, verbatim").join("third-person report")); } catch { threw = true; }
   assert.ok(threw, "first-person requirement did not fail");
   threw = false;
-  try { assertAlignment(all.split("115f7da3034a79662887fc4a45d3c3b1224bb43a").join("wrong-live-pin")); } catch { threw = true; }
+  try { assertAlignment(all.split("4b73168fbfbb2f13f11e56e368244166955f6af2").join("wrong-live-pin")); } catch { threw = true; }
   assert.ok(threw, "current live pin did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
@@ -79,5 +80,5 @@ function selfTest() {
 if (process.argv.includes("--self-test")) selfTest();
 else {
   assertAlignment(all);
-  console.log("SPEC_ALIGNMENT_PASS docs=" + String(docs.length) + " currentPin=115f7da3034a79662887fc4a45d3c3b1224bb43a");
+  console.log("SPEC_ALIGNMENT_PASS docs=" + String(docs.length) + " currentPin=4b73168fbfbb2f13f11e56e368244166955f6af2");
 }
