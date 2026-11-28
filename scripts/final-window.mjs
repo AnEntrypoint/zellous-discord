@@ -14,12 +14,12 @@ const windows = {
     npm("cleanup:red-check", "--", "--self-test"), npm("channel-root:red-check", "--", "--self-test"),
     npm("text:red-check", "--", "--self-test"), npm("voice:red-check", "--", "--self-test"),
     npm("live:restart", "--", "--self-test"), npm("ui:marker-red-check", "--", "--self-test"),
-    npm("voice:red-check"), npm("voice:bridge", "--", "--self-test"), npm("relay:heal", "--", "--self-test"), npm("secret:scan"), npm("secret:red-check"), npm("serve:check"),
+    npm("voice:red-check"), npm("voice:bridge", "--", "--self-test"), npm("attribution:witness", "--", "--self-test"), npm("relay:heal", "--", "--self-test"), npm("secret:scan"), npm("secret:red-check"), npm("serve:check"),
     ["git", ["check-ignore", "-v", ".env"]]
   ],
   b: [
     npm("discover:query"), npm("source:truth"), npm("source:red-check"), npm("presence:red-check"),
-    npm("snapshot:red-check"), npm("channel-root:red-check"), npm("cleanup:red-check"), npm("serve:check")
+    npm("snapshot:reconcile"), npm("live:inventory"), npm("snapshot:red-check"), npm("channel-root:red-check"), npm("cleanup:red-check"), npm("attribution:witness"), npm("text:marker"), npm("text:red-check"), npm("ui:marker"), npm("ui:marker-red-check"), npm("serve:check")
   ]
 };
 const part = process.argv.includes("--part=b") ? "b" : "a";

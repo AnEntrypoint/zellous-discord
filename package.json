@@ -45,6 +45,7 @@
     "text:red-check": "node scripts/text-red-check.mjs",
     "voice:red-check": "node scripts/voice-red-check.mjs",
     "relay:heal": "node scripts/relay-heal.mjs",
+    "attribution:witness": "node scripts/attribution-witness.mjs",
     "voice:pool": "node scripts/voice-pool-check.mjs",
     "voice:bridge": "node scripts/voice-bridge-check.mjs",
     "voice:proof": "node scripts/voice-proof.mjs",
