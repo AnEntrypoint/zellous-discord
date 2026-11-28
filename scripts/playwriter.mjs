@@ -9,14 +9,28 @@ const warmBody = ["url=https://anentrypoint.github.io/zellous/nostr-chat/", "wai
 
 function browserCode(firstBody, secondBody) {
   return [
-    "await gm.browser_reset({});",
+    "const startReset = await gm.browser_reset({});",
+    "if (!startReset || startReset.ok !== true) throw new Error('browser start reset failed: ' + String(startReset && startReset.error));",
+    "let result;",
+    "try {",
     "const warm = await gm.browser({raw_body:" + JSON.stringify(warmBody) + "});",
     "if (!warm.ok) throw new Error('browser warmup failed: ' + String(warm.error));",
     "const first = await gm.browser({raw_body:" + JSON.stringify(firstBody) + "});",
     "if (!first.ok || first.exit_code !== 0) throw new Error('first browser steps failed: ' + String(first.error));",
     "const second = await gm.browser({raw_body:" + JSON.stringify(secondBody) + "});",
     "if (!second.ok || second.exit_code !== 0) throw new Error('second browser steps failed: ' + String(second.error));",
-    "return {ok:second.ok,exitCode:second.exit_code,evalValues:second.pages.filter(p=>p.op==='eval').map(p=>p.value),steps:second.steps.map(s=>s.action)}"
+    "const firstPages = Array.isArray(first.pages) ? first.pages : [];",
+    "const secondPages = Array.isArray(second.pages) ? second.pages : [];",
+    "const firstSteps = Array.isArray(first.steps) ? first.steps.map(function(step) { return step.action; }) : [];",
+    "const secondSteps = Array.isArray(second.steps) ? second.steps.map(function(step) { return step.action; }) : [];",
+    "const firstEvalValues = firstPages.filter(function(page) { return page.op === 'eval'; }).map(function(page) { return page.value; });",
+    "const secondEvalValues = secondPages.filter(function(page) { return page.op === 'eval'; }).map(function(page) { return page.value; });",
+    "result = {ok:second.ok,exitCode:second.exit_code,evalValues:firstEvalValues.concat(secondEvalValues),firstEvalValues,secondEvalValues,firstSteps,secondSteps,steps:firstSteps.concat(secondSteps)};",
+    "} finally {",
+    "const endReset = await gm.browser_reset({});",
+    "if (!endReset || endReset.ok !== true) throw new Error('browser close failed: ' + String(endReset && endReset.error));",
+    "}",
+    "return result;"
   ].join(nl);
 }
 
@@ -59,5 +73,6 @@ export async function playwriter(firstBody, secondBody) {
   assert.equal(parsed.ok, true, "playwriter browser step failed");
   assert.equal(parsed.exitCode, 0, "playwriter browser exit code");
   assert.ok(parsed.evalValues.length > 0, "playwriter returned no evidence");
+  assert.ok(Array.isArray(parsed.firstSteps) && Array.isArray(parsed.secondSteps) && Array.isArray(parsed.steps), "playwriter returned no browser steps");
   return parsed;
 }

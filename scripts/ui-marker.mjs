@@ -64,8 +64,8 @@ function capture(key, marker) {
   return "eval=" + js;
 }
 
-function finalEvidence() {
-  const js = "(function(){var a=JSON.parse(localStorage.getItem('zn_servers')||'[]');var s=a.find(function(x){return x.id===localStorage.getItem('zn_lastServer')});window.__zdbWitness.serverName=s?s.name:null;window.__zdbWitness.url=location.href;localStorage.setItem('zdbWitness',JSON.stringify(window.__zdbWitness));return JSON.stringify(window.__zdbWitness)})()";
+function finalEvidence(guildName) {
+  const js = "(function(){var n=" + JSON.stringify(guildName) + ";var a=JSON.parse(localStorage.getItem('zn_servers')||'[]');var s=a.find(function(x){return x.id===localStorage.getItem('zn_lastServer')});var body=String(document.body.innerText||'');var cls=String(document.documentElement.className||'');var elements=Array.from(document.querySelectorAll('h1,h2,h3,[aria-label],[title],[data-server-name]'));var element=elements.map(function(x){return String(x.textContent||x.getAttribute('aria-label')||x.getAttribute('title')||x.getAttribute('data-server-name')||'').trim();}).find(function(x){return x===n;});var dom=element?n:(body.includes(n)?n:(cls.includes('ds-'+n)?n:null));var source=element?'dom-element':(body.includes(n)?'dom-body-text':(cls.includes('ds-'+n)?'dom-document-class':null));window.__zdbWitness=window.__zdbWitness||{};window.__zdbWitness.serverName=s?s.name:null;window.__zdbWitness.domServerName=dom;window.__zdbWitness.domServerNameSource=source;window.__zdbWitness.domStaleNamePresent=body.includes('Discord Bridge');window.__zdbWitness.url=location.href;localStorage.setItem('zdbWitness',JSON.stringify(window.__zdbWitness));return JSON.stringify(window.__zdbWitness)})()";
   return "eval=" + js;
 }
 
@@ -93,7 +93,7 @@ function browserSteps(guildName) {
     "press=Enter",
     "wait=3500",
     capture("warez", markers["warez-and-wonders"]),
-    finalEvidence()
+    finalEvidence(guildName)
   ].join(nl);
   return { first, second };
 }
@@ -140,9 +140,16 @@ async function main() {
   const browser = await playwriter(steps.first, steps.second);
   const evidence = JSON.parse(browser.evalValues.at(-1));
   assert.equal(evidence.serverName, guildName, "browser cached server name is stale");
+  assert.equal(evidence.domServerName, guildName, "browser DOM server name is stale");
+  assert.ok(["dom-element", "dom-body-text", "dom-document-class"].includes(evidence.domServerNameSource), "browser DOM server name source is cached-only");
+  assert.equal(evidence.domStaleNamePresent, false, "browser DOM shows stale Discord Bridge name");
   assert.ok(String(evidence.url).includes("anentrypoint.github.io/zellous/nostr-chat/"), "witness did not use the live Zellous UI");
   assert.ok(existsSync(screenshotPath), "browser screenshot missing");
+  assert.ok(browser.firstSteps.includes("type") && browser.firstSteps.includes("press") && browser.firstSteps.includes("screenshot"), "live UI inference typing steps missing");
+  assert.ok(browser.secondSteps.includes("type") && browser.secondSteps.includes("press") && browser.secondSteps.includes("eval"), "live UI warez typing steps missing");
+  assert.ok(browser.steps.includes("type") && browser.steps.includes("press") && browser.steps.includes("screenshot"), "live UI browser steps missing");
   const ui = {};
+  const uiStates = {};
   for (const target of targets) {
     const key = target.name === "inference" ? "inference" : "warez";
     const state = evidence[key];
@@ -155,6 +162,7 @@ async function main() {
     assert.equal(String(state.message.id).length, 64, "live UI event ID missing");
     assert.ok(/^[0-9a-f]{64}$/.test(String(state.message.pubkey)), "live UI pubkey missing");
     ui[target.name] = state.message;
+    uiStates[target.name] = state;
   }
   const roots = targets.map(function(target) { return target.root; });
   let events = [];
@@ -192,7 +200,9 @@ async function main() {
     assert.equal(wrong, 0, "marker reflected to the wrong Discord channel: " + target.name);
     const username = liveClientAuthor(ui[target.name].pubkey);
     assert.equal(own[0].content, visibleDiscordContent(username, marker), "visible attribution mismatch: " + target.name);
-    return { name: target.name, channelId: target.id, root: target.root, marker, uiEventId: ui[target.name].id, uiPubkey: ui[target.name].pubkey, username, discordMessageId: String(own[0].id), discordContent: String(own[0].content), ownCount: own.length, wrongChannelCount: wrong, relayCount: 1, relayRoot: relay[target.name].root, syntheticTagCount: relay[target.name].syntheticTagCount, activeChannelId: evidence[target.name === "inference" ? "inference" : "warez"].active, placeholder: evidence[target.name === "inference" ? "inference" : "warez"].placeholder };
+    const state = uiStates[target.name];
+    const stepList = target.name === "inference" ? browser.firstSteps : browser.secondSteps;
+    return { name: target.name, channelId: target.id, root: target.root, marker, uiEventId: ui[target.name].id, uiPubkey: ui[target.name].pubkey, username, discordMessageId: String(own[0].id), discordContent: String(own[0].content), ownCount: own.length, wrongChannelCount: wrong, relayCount: 1, relayRoot: relay[target.name].root, syntheticTagCount: relay[target.name].syntheticTagCount, activeChannelId: state.active, placeholder: state.placeholder, domVisible: state.domVisible, typedInDom: state.domVisible, pressedEnter: stepList.includes("press") };
   });
   const unknownPosts = [...settled.values()].reduce(function(total, messages) { return total + messages.filter(function(message) { return String(message.content).includes("zdb-ui-unknown-"); }).length; }, 0);
   assert.equal(unknownPosts, 0, "unknown root posted to Discord");
@@ -203,7 +213,7 @@ async function main() {
   if (health.voiceReflectionComplete) assert.ok(health.voiceTokenCount >= 2 && health.voiceFrameCount > 0, "degraded voice reflection falsely marked complete");
   const fresh = distFresh();
   assert.equal(fresh, true, "stale dist");
-  const result = { ok: true, serverId, sendPath: "live-zellous-ui", syntheticOnly: false, publishChatEventUsed: false, browser: { url: String(evidence.url), domServerName: String(evidence.serverName), screenshot: screenshotPath }, channels: reflected, unknownRoot: { root: unknownRoot, suppressed: true, discordPostCount: unknownPosts }, activeUiFallback: false, leftoverMarkerCount: leftover.length, channelCount: after.length, liveServiceCount: lines.length, liveServicePid, voiceReflectionComplete: health.voiceReflectionComplete, voiceTokenCount: health.voiceTokenCount, voiceFrameCount: health.voiceFrameCount, distFresh: fresh, secretFound: false };
+  const result = { ok: true, serverId, sendPath: "live-zellous-ui", syntheticOnly: false, publishChatEventUsed: false, browser: { url: String(evidence.url), domServerName: String(evidence.domServerName), domServerNameSource: String(evidence.domServerNameSource), cachedServerName: String(evidence.serverName), cachedOnly: false, serverNameSource: "playwriter-browser-dom", screenshot: screenshotPath, firstSteps: browser.firstSteps, secondSteps: browser.secondSteps, steps: browser.steps, firstBody: steps.first, secondBody: steps.second }, channels: reflected, unknownRoot: { root: unknownRoot, suppressed: true, discordPostCount: unknownPosts }, activeUiFallback: false, leftoverMarkerCount: leftover.length, channelCount: after.length, liveServiceCount: lines.length, liveServicePid, voiceReflectionComplete: health.voiceReflectionComplete, voiceTokenCount: health.voiceTokenCount, voiceFrameCount: health.voiceFrameCount, distFresh: fresh, secretFound: false };
   const output = JSON.stringify(result);
   assert.equal(findSecretPattern(output), null, "secret value in output");
   writeFileSync(join(dir, "ui-marker-result.json"), output, { mode: 0o600 });

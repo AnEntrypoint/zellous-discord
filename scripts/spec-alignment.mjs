@@ -33,7 +33,8 @@ const needles = [
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
   "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
   "BRIDGE_PRIVATE_KEY_HEX",
-  "zellous-discover"
+  "zellous-discover",
+  "I reported, verbatim"
 ];
 
 function assertAlignment(text) {
@@ -63,6 +64,9 @@ function selfTest() {
   threw = false;
   try { assertAlignment(all.split("active acceptance claim is stopped").join("acceptance claim active")); } catch { threw = true; }
   assert.ok(threw, "held acceptance state did not fail");
+  threw = false;
+  try { assertAlignment(all.split("I reported, verbatim").join("third-person report")); } catch { threw = true; }
+  assert.ok(threw, "first-person requirement did not fail");
   console.log("SPEC_ALIGNMENT_SELF_TEST_PASS");
 }
 
