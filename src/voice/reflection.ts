@@ -67,8 +67,9 @@ export class VoiceReflection {
         this.logger.warn("voice pool has no free identity", { humanUserId: userId, capacity: this.discordPool.capacity() });
         return;
       }
-      this.logger.info("voice bot joined channel", { identity: joined.identity, botUserId: joined.botUserId, channelId: joined.channelId, humanUserId: userId, moved: joined.moved });
+      this.logger.info("voice bot joined channel", { identity: joined.identity, botUserId: joined.botUserId, channelId: joined.channelId, humanUserId: userId, moved: joined.moved, shared: joined.shared });
       this.refreshIdentityCount();
+      if (joined.shared) this.proof = { ...this.proof, mixedAudio: true };
     }).catch((error: unknown) => {
       this.logger.error("voice bot join failed", { humanUserId: userId, message: error instanceof Error ? error.message : String(error) });
     });

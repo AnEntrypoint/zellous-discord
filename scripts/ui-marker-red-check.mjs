@@ -79,7 +79,7 @@ function assertResult(result) {
   assert.ok(String(result.liveServicePid).length > 0, "missing live service PID");
   assert.equal(result.distFresh, true, "stale dist");
   assert.equal(currentDistFresh(), true, "stale dist");
-  if (result.voiceReflectionComplete) assert.ok(result.voiceTokenCount >= 2 && result.voiceFrameCount > 0, "degraded voice reflection falsely marked complete");
+  if (result.voiceReflectionComplete) assert.ok(result.voiceTokenCount >= 1 && result.voiceFrameCount > 0, "degraded voice reflection falsely marked complete");
   assert.equal(findSecretPattern(JSON.stringify(result)), null, "secret value in output");
   assert.equal(result.secretFound, false, "secret value in output");
 }

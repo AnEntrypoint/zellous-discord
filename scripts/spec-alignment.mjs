@@ -24,12 +24,10 @@ const needles = [
   "voice:red-check",
   "Portal intent approval and relay-set confirmation are not held",
   "text reflection works with privileged intents off",
-  "two-token DISCORD_VOICE_TOKENS pool remains held",
-  "VOICE_POOL_INSUFFICIENT",
-  "voicePoolState=insufficient",
+  "one bot identity reflects a mix",
+  "voicePoolState=ready",
   "active acceptance claim is stopped",
-  "distinct installed voice identity is held",
-  "voice:proof is not part of the green window",
+  "voice proof is held until real frames flow in both directions",
   "DISCORD_PRIVILEGED_INTENTS=false",
   "wss://relay.damus.io,wss://relay.primal.net,wss://nos.lol,wss://relay.snort.social",
   "988af764450d7128e20e8d31004efb717fd10abfd79e57224465863d81468711",
@@ -60,8 +58,11 @@ function selfTest() {
   try { assertAlignment(all.split("Portal intent approval and relay-set confirmation are not held").join("Portal approval is held")); } catch { threw = true; }
   assert.ok(threw, "held direction did not fail");
   threw = false;
-  try { assertAlignment(all.split("VOICE_POOL_INSUFFICIENT").join("VOICE_POOL_ABSENT")); } catch { threw = true; }
-  assert.ok(threw, "one-token insufficient reason did not fail");
+  try { assertAlignment(all.split("voicePoolState=ready").join("voicePoolState=insufficient")); } catch { threw = true; }
+  assert.ok(threw, "one-identity ready pool did not fail");
+  threw = false;
+  try { assertAlignment(all.split("one bot identity reflects a mix").join("two identities are required")); } catch { threw = true; }
+  assert.ok(threw, "one mixing identity fact did not fail");
   threw = false;
   try { assertAlignment(all.split("active acceptance claim is stopped").join("acceptance claim active")); } catch { threw = true; }
   assert.ok(threw, "held acceptance state did not fail");

@@ -29,7 +29,7 @@ Owner bundle events are zellous-discover: kind 34550 server metadata with d=disc
 
 Kind 42 chat uses e root SHA-256(serverId + ":" + channelId). Zellous-to-Discord messages strip the room- prefix from roomId before REST calls; Discord-to-Zellous messages use chat.sendTo with the owner server id and channel id. Startup reconciliation and the event-ingest path remain read-only by default so no Discord channel writes occur when the expected snapshot exists.
 
-Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off. Owner-signed events use BRIDGE_PRIVATE_KEY_HEX from the ignored .env and have been published.
+The installed voice pool needs no further credential: one bot identity reflects a mix. Portal intent approval and relay-set confirmation are not held; text reflection works with privileged intents off. Owner-signed events use BRIDGE_PRIVATE_KEY_HEX from the ignored .env and have been published.
 ## Owner-authorized reversible duplicate cleanup alignment
 
 The changed facts checked, architecture, Stage 7, who-owns-what and done sections authorize cleanup of duplicate channels on both Discord and Zellous. Owner-authorized reversible duplicate cleanup preserves canonical channels, deletes only bridge-created duplicates, reports exact before/after counts and IDs, records cleanup-backup.json and supports cleanup-rollback. destructive cleanup is limited to those duplicates. The final witness window zellous-discord-live-1 includes cleanup:red-check and its self-test.
@@ -38,11 +38,11 @@ Open note: chat-exposed owner key rotation risk remains; the existing key is use
 
 owner-authorized reversible duplicate cleanup uses cleanup-backup.json, cleanup-rollback and cleanup:red-check; destructive cleanup is limited to bridge-created duplicates.
 
-Only the owner-installed two-token DISCORD_VOICE_TOKENS pool remains held. Portal intent approval and relay-set confirmation are not held. Text reflection works with privileged intents off through Gateway IDs plus REST content fetch; the live four-relay default needs no owner confirmation.
+The installed voice pool needs no further credential: one bot identity reflects a mix. Portal intent approval and relay-set confirmation are not held. Text reflection works with privileged intents off through Gateway IDs plus REST content fetch; the live four-relay default needs no owner confirmation.
 
-One distinct DISCORD_VOICE_TOKENS entry is an insufficient one-identity voice pool. Health and witnesses report voiceTokenCount=1, voicePoolState=insufficient and voiceReadinessReason=VOICE_POOL_INSUFFICIENT, never VOICE_POOL_ABSENT. voiceReflectionComplete stays false and privilegedIntentsEnabled stays false. Only a second distinct installed bot token remains held.
+A DISCORD_VOICE_TOKENS pool of one or more entries reports voicePoolState=ready; zero entries report VOICE_POOL_ABSENT. Until real frames flow both ways the reason is VOICE_FRAMES_UNPROVEN, voiceReflectionComplete stays false and privilegedIntentsEnabled stays false. A human joining a Discord voice channel brings one pool bot into that channel and later humans share it.
 
-The active acceptance claim is stopped. The distinct installed voice identity is held; voice:proof is not part of the green window until two distinct installed identities exist.
+The active acceptance claim is stopped. The voice proof is held until real frames flow in both directions; voice:proof is not part of the green window.
 
 ## Stage 5 per-channel routing alignment
 

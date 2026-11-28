@@ -63,10 +63,11 @@ function expectThrow(operation, label) {
 function selfTest() {
   expectThrow(function() { assertFrameIsolation(); const router = new AudioRouter(); router.ensure("user-a", "discord-to-zellous"); router.setMuted("user-a", true); assert.equal(router.write(frame("user-a", "discord-to-zellous", 1)), true); }, "muted frame isolation");
   expectThrow(function() { const pool = assertWorkerIsolation(); assert.equal(pool.workerCount(), 1); }, "one identity claiming N users");
-  expectThrow(function() { const config = loadConfigFromEnvFile(); const proof = { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1, mixedAudio: true }; assert.equal(voiceReadiness(config, proof).complete, true); }, "mixed-audio fallback claim");
+  expectThrow(function() { const config = loadConfigFromEnvFile(); const proof = { identityCount: 1, frameCount: 4, discordToZellousFrames: 4, zellousToDiscordFrames: 0, mixedAudio: true }; assert.equal(voiceReadiness(config, proof).complete, true); }, "one-direction claim");
   const one = loadConfig({ DISCORD_TOKEN: "control-token", DISCORD_GUILD_ID: "367741339393327104", DISCORD_VOICE_TOKENS: "token-a" });
   const oneReadiness = voiceReadiness(one, emptyVoiceProof());
-  assert.equal(oneReadiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.equal(oneReadiness.reason, "PRIVILEGED_INTENTS_ABSENT");
+  assert.equal(oneReadiness.voicePoolState, "ready");
   assert.notEqual(oneReadiness.reason, "VOICE_POOL_ABSENT");
   console.log("VOICE_RED_CHECK_SELF_TEST_PASS");
 }

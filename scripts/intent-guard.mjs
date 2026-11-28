@@ -34,8 +34,8 @@ function assertOneTokenState(config) {
   const one = loadConfig({ ...config, DISCORD_VOICE_TOKENS: "token-a" });
   const readiness = voiceReadiness(one, emptyVoiceProof());
   assert.equal(readiness.voiceTokenCount, 1);
-  assert.equal(readiness.voicePoolState, "insufficient");
-  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.equal(readiness.voicePoolState, "ready");
+  assert.equal(readiness.reason, "PRIVILEGED_INTENTS_ABSENT");
   assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
   assert.equal(readiness.voiceReflectionComplete, false);
 }

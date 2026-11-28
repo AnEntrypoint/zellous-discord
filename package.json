@@ -47,6 +47,8 @@
     "voice:proof": "node scripts/voice-proof.mjs",
     "voice:proof-red-check": "node scripts/voice-proof-red-check.mjs",
     "final:window": "node scripts/final-window.mjs",
+    "window:a": "node scripts/final-window.mjs --part=a",
+    "window:b": "node scripts/final-window.mjs --part=b",
     "serve:check": "node scripts/serve-health.mjs",
     "config:check": "node scripts/config-check.mjs",
     "witness:suite": "node scripts/witness-suite.mjs",

@@ -82,6 +82,7 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const published: OwnerBundleEvent[] = [];
+  const held = String(process.env.RELAY_WRITE_HOLD ?? "").split(",").map(function(url) { return url.trim(); }).filter(Boolean);
   for (const event of events) {
     const accepted = new Set<string>();
     const rejected = new Map<string, string>();
@@ -94,7 +95,7 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
       if (newest && JSON.stringify(newest.tags) + newest.content === wanted) accepted.add(relay);
     }
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const pending = config.nostrRelays.filter(function(url) { return !accepted.has(url); });
+      const pending = config.nostrRelays.filter(function(url) { return !accepted.has(url) && !held.includes(url); });
       if (pending.length === 0) break;
       if (attempt > 0) await new Promise<void>(function(resolve) { setTimeout(resolve, 15000); });
       const promises = pool.publish(pending, event);

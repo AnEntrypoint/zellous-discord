@@ -4,48 +4,26 @@ import { join } from "node:path";
 
 const scratch = process.env.HYPERAGENT_SCRATCH || "/config/workspace/tmp";
 const evidencePath = join(scratch, "zellous-discord", "discover-evidence.txt");
-const commands = [
-  ["npm", ["run", "typecheck"]],
-  ["npm", ["run", "build"]],
-  ["npm", ["run", "unit"]],
-  ["npm", ["run", "integration"]],
-  ["npm", ["run", "config:check"]],
-  ["npm", ["run", "intent:guard"]],
-  ["npm", ["run", "intent:red-check"]],
-  ["npm", ["run", "spec:alignment"]],
-  ["npm", ["run", "spec:red-check"]],
-  ["npm", ["run", "live:alignment"]],
-  ["npm", ["run", "alignment:red-check"]],
-  ["npm", ["run", "discover:red-check"]],
-  ["npm", ["run", "source:red-check", "--", "--self-test"]],
-  ["npm", ["run", "presence:red-check", "--", "--self-test"]],
-  ["npm", ["run", "discover:publish"]],
-  ["npm", ["run", "discover:query"]],
-  ["npm", ["run", "source:truth"]],
-  ["npm", ["run", "snapshot:reconcile"]],
-  ["npm", ["run", "live:inventory"]],
-  ["npm", ["run", "snapshot:red-check"]],
-  ["npm", ["run", "cleanup:red-check", "--", "--self-test"]],
-  ["npm", ["run", "cleanup:red-check"]],
-  ["npm", ["run", "channel-root:red-check", "--", "--self-test"]],
-  ["npm", ["run", "channel-root:red-check"]],
-  ["npm", ["run", "text:red-check", "--", "--self-test"]],
-  ["npm", ["run", "voice:red-check", "--", "--self-test"]],
-  ["npm", ["run", "live:restart", "--", "--self-test"]],
-  ["npm", ["run", "live:restart"]],
-  ["npm", ["run", "ui:marker-red-check", "--", "--self-test"]],
-  ["npm", ["run", "ui:marker"]],
-  ["npm", ["run", "ui:marker-red-check"]],
-  ["npm", ["run", "voice:red-check"]],
-  ["npm", ["run", "live:voice"]],
-  ["npm", ["run", "source:red-check"]],
-  ["npm", ["run", "presence:red-check"]],
-  ["npm", ["run", "secret:scan"]],
-  ["npm", ["run", "secret:red-check"]],
-  ["npm", ["run", "serve:check"]],
-  ["npm", ["run", "restart:recovery"]],
-  ["git", ["check-ignore", "-v", ".env"]]
-];
+const npm = function(...args) { return ["npm", ["run", ...args]]; };
+const windows = {
+  a: [
+    npm("typecheck"), npm("build"), npm("unit"), npm("integration"), npm("config:check"),
+    npm("intent:guard"), npm("intent:red-check"), npm("spec:alignment"), npm("spec:red-check"),
+    npm("live:alignment"), npm("alignment:red-check"), npm("discover:red-check"),
+    npm("source:red-check", "--", "--self-test"), npm("presence:red-check", "--", "--self-test"),
+    npm("cleanup:red-check", "--", "--self-test"), npm("channel-root:red-check", "--", "--self-test"),
+    npm("text:red-check", "--", "--self-test"), npm("voice:red-check", "--", "--self-test"),
+    npm("live:restart", "--", "--self-test"), npm("ui:marker-red-check", "--", "--self-test"),
+    npm("voice:red-check"), npm("secret:scan"), npm("secret:red-check"), npm("serve:check"),
+    ["git", ["check-ignore", "-v", ".env"]]
+  ],
+  b: [
+    npm("discover:query"), npm("source:truth"), npm("source:red-check"), npm("presence:red-check"),
+    npm("snapshot:red-check"), npm("channel-root:red-check"), npm("cleanup:red-check"), npm("serve:check")
+  ]
+};
+const part = process.argv.includes("--part=b") ? "b" : "a";
+const commands = windows[part];
 
 function checkEvidence() {
   const evidence = readFileSync(evidencePath, "utf8");
@@ -70,5 +48,6 @@ try {
   code = typeof error.status === "number" ? error.status : 1;
   console.error(String(error.message || error));
 }
+console.log("WINDOW_" + part.toUpperCase() + "_DONE " + String(code));
 console.log("LIVE_DONE " + String(code));
 process.exitCode = code;

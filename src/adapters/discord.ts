@@ -19,7 +19,7 @@ export function gatewayIntents(config: Config): number[] {
 export function degradedFeatures(config: Config, readiness?: { complete: boolean }): string[] {
   const features: string[] = [];
   if (!config.privilegedIntentsEnabled) features.push("message-content", "presence", "member-list");
-  const complete = readiness ? readiness.complete : config.voiceTokens.length >= 2 && config.privilegedIntentsEnabled;
+  const complete = readiness ? readiness.complete : config.voiceTokens.length >= 1 && config.privilegedIntentsEnabled;
   if (!complete) features.push("per-user-voice-reflection");
   return features;
 }

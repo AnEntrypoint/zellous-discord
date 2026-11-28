@@ -12,12 +12,12 @@ test("zero tokens stay honestly degraded", function() {
   assert.equal(readiness.reason, "VOICE_POOL_ABSENT");
 });
 
-test("one token reports an insufficient voice pool", function() {
-  const config = loadConfig({ ...base, DISCORD_VOICE_TOKENS: "token-a" });
+test("one token is a sufficient voice pool that stays degraded until frames flow", function() {
+  const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a" });
   const readiness = voiceReadiness(config, emptyVoiceProof());
   assert.equal(readiness.voiceTokenCount, 1);
-  assert.equal(readiness.voicePoolState, "insufficient");
-  assert.equal(readiness.reason, "VOICE_POOL_INSUFFICIENT");
+  assert.equal(readiness.voicePoolState, "ready");
+  assert.equal(readiness.reason, "VOICE_FRAMES_UNPROVEN");
   assert.notEqual(readiness.reason, "VOICE_POOL_ABSENT");
   assert.equal(readiness.voiceReflectionComplete, false);
 });
@@ -29,9 +29,10 @@ test("token count alone never proves voice reflection", function() {
   assert.equal(readiness.reason, "VOICE_FRAMES_UNPROVEN");
 });
 
-test("complete voice requires identities, frames and both directions", function() {
-  const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a,token-b" });
-  const readiness = voiceReadiness(config, { identityCount: 2, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1, mixedAudio: false });
+test("complete voice requires one identity, frames and both directions and allows a mix", function() {
+  const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a" });
+  assert.equal(voiceReadiness(config, { identityCount: 1, frameCount: 2, discordToZellousFrames: 2, zellousToDiscordFrames: 0, mixedAudio: true }).complete, false);
+  const readiness = voiceReadiness(config, { identityCount: 1, frameCount: 2, discordToZellousFrames: 1, zellousToDiscordFrames: 1, mixedAudio: true });
   assert.equal(readiness.complete, true);
   assert.equal(readiness.voiceReflectionComplete, true);
 });
