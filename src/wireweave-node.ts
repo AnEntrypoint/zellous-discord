@@ -67,16 +67,36 @@ class NodeAudioWorkletNode {
   connect(): void {}
 }
 
-function fileStorage(stateDir: string) {
+export function fileStorage(stateDir: string) {
   mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const path = join(stateDir, "wireweave-storage.json");
-  let values: Record<string, string> = {};
-  try { values = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) as Record<string, string> : {}; } catch { values = {}; }
-  const persist = () => writeFileSync(path, JSON.stringify(values), { mode: 0o600 });
+  const load = function(): Record<string, string> {
+    try { return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) as Record<string, string> : {}; } catch { return {}; }
+  };
+  const persist = function(values: Record<string, string>): void { writeFileSync(path, JSON.stringify(values), { mode: 0o600 }); };
+  const mergeServerIcons = function(values: Record<string, string>, value: string): string {
+    try {
+      const previous = JSON.parse(values.zn_servers ?? "[]") as Array<Record<string, unknown>>;
+      const next = JSON.parse(value) as Array<Record<string, unknown>>;
+      for (const server of next) {
+        const found = previous.find(function(item) { return item.id === server.id; });
+        if (found && typeof found.icon === "string" && found.icon) server.icon = found.icon;
+      }
+      return JSON.stringify(next);
+    } catch { return value; }
+  };
   return {
-    getItem: (key: string) => values[key] ?? null,
-    setItem: (key: string, value: string) => { values[key] = value; persist(); },
-    removeItem: (key: string) => { delete values[key]; persist(); }
+    getItem: (key: string) => load()[key] ?? null,
+    setItem: (key: string, value: string) => {
+      const values = load();
+      values[key] = key === "zn_servers" ? mergeServerIcons(values, value) : value;
+      persist(values);
+    },
+    removeItem: (key: string) => {
+      const values = load();
+      delete values[key];
+      persist(values);
+    }
   };
 }
 
