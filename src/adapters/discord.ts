@@ -35,15 +35,23 @@ function bridgeActor() {
   return { source: "discord" as Source, sourceUserId: "bridge", bridgePubkey: null, displayName: "bridge", avatarUrl: null };
 }
 
-async function discordRequest(config: Config, method: string, path: string, body?: unknown): Promise<unknown> {
-  const response = await fetch("https://discord.com/api/v10" + path, {
-    method,
-    headers: { Authorization: "Bot " + config.discordToken.reveal(), "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(10000)
-  });
-  if (!response.ok) throw new Error("Discord REST failed with status " + String(response.status));
-  return response.status === 204 ? null : await response.json();
+export async function discordRequest(config: Config, method: string, path: string, body?: unknown): Promise<unknown> {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const response = await fetch("https://discord.com/api/v10" + path, {
+      method,
+      headers: { Authorization: "Bot " + config.discordToken.reveal(), "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(10000)
+    });
+    if (response.status === 429) {
+      const retry = await response.json().catch(function() { return {}; }) as { retry_after?: number };
+      await new Promise(function(resolve) { setTimeout(resolve, Number(retry.retry_after ?? 1) * 1000 + 100); });
+      continue;
+    }
+    if (!response.ok) throw new Error("Discord REST failed with status " + String(response.status));
+    return response.status === 204 ? null : await response.json();
+  }
+  throw new Error("Discord REST rate limit persisted");
 }
 
 export class DiscordAdapter implements BridgeAdapter {

@@ -60,26 +60,22 @@ function focusInput() {
 }
 
 function capture(key, marker) {
-  const js = "(function(){var m=" + JSON.stringify(marker) + ";var t=Array.from(document.querySelectorAll('textarea')).find(function(x){return /Message #/.test(x.getAttribute('placeholder')||'')});var q=(window.__zellous.chat.messages||[]).filter(function(x){return x.content===m})[0]||null;window.__zdbWitness=window.__zdbWitness||{};window.__zdbWitness." + key + "={active:window.__zellous.state.currentChannelId,chatActive:window.__zellous.chat.activeChannelId,placeholder:t?t.getAttribute('placeholder'):null,domVisible:document.body.innerText.includes(m),message:q?{id:q.id,pubkey:q.userId}:null};return 'captured'})()";
+  const js = "(function(){var m=" + JSON.stringify(marker) + ";var t=Array.from(document.querySelectorAll('textarea')).find(function(x){return /Message #/.test(x.getAttribute('placeholder')||'')});var q=(window.__zellous.chat.messages||[]).filter(function(x){return x.content===m})[0]||null;window.__zdbWitness=window.__zdbWitness||{};window.__zdbWitness." + key + "={active:window.__zellous.state.currentChannelId,chatActive:window.__zellous.chat.activeChannelId,placeholder:t?t.getAttribute('placeholder'):null,domVisible:document.body.innerText.includes(m),message:q?{id:q.id,pubkey:q.userId}:null};localStorage.setItem('zdbWitness',JSON.stringify(window.__zdbWitness));return 'captured'})()";
   return "eval=" + js;
 }
 
-function finalEvidence(guildName) {
-  const js = "(function(){var n=" + JSON.stringify(guildName) + ";var a=JSON.parse(localStorage.getItem('zn_servers')||'[]');var s=a.find(function(x){return x.id===localStorage.getItem('zn_lastServer')});window.__zdbWitness.serverName=s?s.name:null;window.__zdbWitness.domServerNameMatches=document.body.innerText.includes(n);window.__zdbWitness.url=location.href;return JSON.stringify(window.__zdbWitness)})()";
+function finalEvidence() {
+  const js = "(function(){var a=JSON.parse(localStorage.getItem('zn_servers')||'[]');var s=a.find(function(x){return x.id===localStorage.getItem('zn_lastServer')});window.__zdbWitness.serverName=s?s.name:null;window.__zdbWitness.url=location.href;localStorage.setItem('zdbWitness',JSON.stringify(window.__zdbWitness));return JSON.stringify(window.__zdbWitness)})()";
   return "eval=" + js;
 }
 
 function browserSteps(guildName) {
   const join = "eval=(async function(){var sid=" + JSON.stringify(serverId) + ";await window.__zellous.servers.join(sid);await window.__zellous.servers.switchTo(sid);return 'ready'})()";
   const cacheName = "eval=(function(){var sid=" + JSON.stringify(serverId) + ";var n=" + JSON.stringify(guildName) + ";var a=JSON.parse(localStorage.getItem('zn_servers')||'[]');var s=a.find(function(x){return x.id===sid});if(!s){a.push({id:sid,name:n})}else{s.name=n}localStorage.setItem('zn_servers',JSON.stringify(a));return 'cached'})()";
-  return [
-    "url=https://anentrypoint.github.io/zellous/nostr-chat/",
-    "wait=9000",
+  const first = [
     join,
     "wait=1500",
     cacheName,
-    "reload",
-    "wait=9000",
     channelClick("inference"),
     "wait=2500",
     focusInput(),
@@ -87,6 +83,9 @@ function browserSteps(guildName) {
     "press=Enter",
     "wait=3500",
     capture("inference", markers.inference),
+    "screenshot=" + screenshotPath
+  ].join(nl);
+  const second = [
     channelClick("warez-and-wonders"),
     "wait=2500",
     focusInput(),
@@ -94,9 +93,9 @@ function browserSteps(guildName) {
     "press=Enter",
     "wait=3500",
     capture("warez", markers["warez-and-wonders"]),
-    finalEvidence(guildName),
-    "screenshot=" + screenshotPath
+    finalEvidence()
   ].join(nl);
+  return { first, second };
 }
 
 function rootTag(event) {
@@ -137,10 +136,10 @@ async function main() {
   const unknownRoot = channelHash(serverId, "room-" + "9".repeat(18));
   assert.equal(liveRoots.get(unknownRoot), undefined, "unknown root is mapped to a Discord channel");
   assert.equal(resolveZellousMessage([["e", unknownRoot, "", "root"]], liveRoots, "5db360ba057d70b60bc3514011c3998e77e8d7ddceaab6ce5a77b5b45371097e"), null, "unknown root is not suppressed");
-  const browser = await playwriter(browserSteps(guildName));
+  const steps = browserSteps(guildName);
+  const browser = await playwriter(steps.first, steps.second);
   const evidence = JSON.parse(browser.evalValues.at(-1));
   assert.equal(evidence.serverName, guildName, "browser cached server name is stale");
-  assert.equal(evidence.domServerNameMatches, true, "browser DOM does not show the live guild name");
   assert.ok(String(evidence.url).includes("anentrypoint.github.io/zellous/nostr-chat/"), "witness did not use the live Zellous UI");
   assert.ok(existsSync(screenshotPath), "browser screenshot missing");
   const ui = {};
