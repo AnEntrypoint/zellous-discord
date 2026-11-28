@@ -23,11 +23,55 @@ export interface VoiceJoinResult {
   shared: boolean;
 }
 
+function isSnowflake(value: string): boolean {
+  return /^[0-9]{17,20}$/.test(value);
+}
+
 export class DiscordVoicePool {
   private readonly sessions = new Map<string, DiscordVoiceSession>();
   private readonly clients = new Map<number, Client>();
 
+  private usableIndexes: number[] | null = null;
+  private invalidIndexes: number[] = [];
+  private duplicateIndexes: number[] = [];
+
   constructor(private readonly config: Config) {}
+
+  async probe(): Promise<{ usable: number; invalid: number; duplicate: number }> {
+    const seen = new Set<string>();
+    const usable: number[] = [];
+    const invalid: number[] = [];
+    const duplicate: number[] = [];
+    for (let index = 0; index < this.config.voiceTokens.length; index += 1) {
+      try {
+        const response = await fetch("https://discord.com/api/v10/users/@me", { headers: { Authorization: "Bot " + this.config.voiceTokens[index].reveal() }, signal: AbortSignal.timeout(10000) });
+        if (response.status === 401 || response.status === 403) { invalid.push(index); continue; }
+        if (!response.ok) { usable.push(index); continue; }
+        const body = await response.json() as { id?: string };
+        const id = String(body.id ?? "");
+        if (id && seen.has(id)) { duplicate.push(index); continue; }
+        if (id) seen.add(id);
+        usable.push(index);
+      } catch { usable.push(index); }
+    }
+    this.usableIndexes = usable;
+    this.invalidIndexes = invalid;
+    this.duplicateIndexes = duplicate;
+    return { usable: usable.length, invalid: invalid.length, duplicate: duplicate.length };
+  }
+
+  usableCount(): number | null {
+    return this.usableIndexes ? this.usableIndexes.length : null;
+  }
+
+  invalidIdentityCount(): number {
+    return this.invalidIndexes.length + this.duplicateIndexes.length;
+  }
+
+  private candidateIndexes(): number[] {
+    if (this.usableIndexes) return this.usableIndexes;
+    return Array.from({ length: this.config.voiceTokens.length }, function(_, index) { return index; });
+  }
 
   capacity(): number {
     return this.config.voiceTokens.length;
@@ -53,7 +97,7 @@ export class DiscordVoicePool {
   }
 
   private freeIndex(): number {
-    for (let index = 0; index < this.config.voiceTokens.length; index += 1) if (!this.sessions.has("voice-bot-" + String(index + 1))) return index;
+    for (const index of this.candidateIndexes()) if (!this.sessions.has("voice-bot-" + String(index + 1))) return index;
     return -1;
   }
 
@@ -64,13 +108,18 @@ export class DiscordVoicePool {
     const shared = this.sessionIn(channelId);
     if (shared) {
       shared.humanUserIds.add(humanUserId);
-      this.subscribe(shared.identity, humanUserId, function(frame: VoiceFrame) { onFrame(shared.identity, frame); });
+      if (isSnowflake(humanUserId)) this.subscribe(shared.identity, humanUserId, function(frame: VoiceFrame) { onFrame(shared.identity, frame); });
       return { identity: shared.identity, botUserId: shared.userId, channelId, moved: Boolean(current), shared: shared.humanUserIds.size > 1 };
     }
     const index = this.freeIndex();
     if (index < 0) return null;
     const identity = "voice-bot-" + String(index + 1);
-    const client = await this.clientFor(index);
+    let client: Client;
+    try { client = await this.clientFor(index); } catch (error) {
+      if (this.usableIndexes) this.usableIndexes = this.usableIndexes.filter(function(candidate) { return candidate !== index; });
+      this.invalidIndexes.push(index);
+      throw error;
+    }
     const guild = await client.guilds.fetch(guildId);
     const connection = joinVoiceChannel({ channelId, guildId, adapterCreator: guild.voiceAdapterCreator, selfMute: false, selfDeaf: false });
     await entersState(connection, VoiceConnectionStatus.Ready, 15000);
@@ -80,7 +129,7 @@ export class DiscordVoicePool {
     connection.subscribe(player);
     const session: DiscordVoiceSession = { client, connection, player, stream, userId: String(client.user?.id ?? ""), identity, channelId, humanUserIds: new Set([humanUserId]) };
     this.sessions.set(identity, session);
-    this.subscribe(identity, humanUserId, function(frame: VoiceFrame) { onFrame(identity, frame); });
+    if (isSnowflake(humanUserId)) this.subscribe(identity, humanUserId, function(frame: VoiceFrame) { onFrame(identity, frame); });
     return { identity, botUserId: session.userId, channelId, moved: Boolean(current), shared: false };
   }
 

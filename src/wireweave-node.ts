@@ -51,11 +51,18 @@ class NodeRTCIceCandidate {
 }
 
 class NodeAudioContext {
+  state = "running";
+  createMediaStreamDestination(): { stream: NodeMediaStream; connect: () => void } {
+    return { stream: new NodeMediaStream(), connect: () => {} };
+  }
+  createGain(): { gain: { value: number }; connect: () => void; disconnect: () => void } {
+    return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} };
+  }
   createMediaStreamSource(): { connect: () => void } {
     return { connect: () => {} };
   }
-  createAnalyser(): { fftSize: number; getByteFrequencyData: () => void } {
-    return { fftSize: 2048, getByteFrequencyData: () => {} };
+  createAnalyser(): { fftSize: number; frequencyBinCount: number; smoothingTimeConstant: number; getByteFrequencyData: (buffer?: Uint8Array) => void; getByteTimeDomainData: (buffer?: Uint8Array) => void; getFloatTimeDomainData: (buffer?: Float32Array) => void; connect: () => void; disconnect: () => void } {
+    return { fftSize: 2048, frequencyBinCount: 1024, smoothingTimeConstant: 0, getByteFrequencyData: () => {}, getByteTimeDomainData: (buffer?: Uint8Array) => { buffer?.fill(128); }, getFloatTimeDomainData: (buffer?: Float32Array) => { buffer?.fill(0); }, connect: () => {}, disconnect: () => {} };
   }
   close(): Promise<void> {
     return Promise.resolve();
@@ -110,17 +117,23 @@ export function installNodeMediaGlobals(): void {
   void uninstall;
 }
 
-export function createNodeWireweave(config: Config): any {
+export interface NodeWireweaveOptions {
+  secretKey?: Uint8Array;
+  stateSubdir?: string;
+  relays?: string[];
+}
+
+export function createNodeWireweave(config: Config, options: NodeWireweaveOptions = {}): any {
   installNodeMediaGlobals();
   const ww = createWireweave({
     nostrTools: NostrTools,
     xstate: XState,
-    storage: fileStorage(config.bridgeStateDir),
-    relays: config.nostrRelays,
+    storage: fileStorage(options.stateSubdir ? join(config.bridgeStateDir, options.stateSubdir) : config.bridgeStateDir),
+    relays: options.relays ?? config.nostrRelays,
     WebSocketImpl: WebSocket,
     mediaDevices: (globalThis as unknown as { navigator: { mediaDevices: unknown } }).navigator.mediaDevices
   });
-  const secretKey = bridgeSecretKey(config);
+  const secretKey = options.secretKey ?? bridgeSecretKey(config);
   ww.auth.importKey(Buffer.from(secretKey).toString("hex"));
   ww.pool.connect();
   ww.servers.init();

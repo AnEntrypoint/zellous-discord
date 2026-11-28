@@ -8,6 +8,7 @@ import { VoiceIdentityLedger } from "./identity.js";
 import { VoiceWorkerPool } from "./pool.js";
 import { emptyVoiceProof, voiceReadiness, type VoiceProof } from "./readiness.js";
 import { WeriftVoicePeer } from "./webrtc.js";
+import { ZellousVoiceBridge } from "./zellous.js";
 
 function frameFromVoiceEvent(event: CanonicalEvent): VoiceFrame | null {
   const voice = event.payload.voice as { opusPayload?: string; identity?: string; userId?: string; direction?: string } | undefined;
@@ -23,11 +24,14 @@ export class VoiceReflection {
   private readonly identities: VoiceIdentityLedger;
   private proof: VoiceProof = emptyVoiceProof();
   private started = false;
+  private readonly zellousBridge: ZellousVoiceBridge;
+  private readonly discordHumans = new Map<string, Set<string>>();
   private readonly chains = new Map<string, Promise<void>>();
   private readonly proofPath: string;
 
-  constructor(private readonly config: Config, private readonly serverId: string, private readonly logger: Logger) {
+  constructor(private readonly config: Config, private readonly serverId: string, private readonly logger: Logger, private readonly channelName: (discordId: string) => string | null = () => null) {
     this.discordPool = new DiscordVoicePool(config);
+    this.zellousBridge = new ZellousVoiceBridge(config, serverId, logger);
     this.identities = new VoiceIdentityLedger(config.bridgeStateDir);
     this.proofPath = join(config.bridgeStateDir, "voice-proof.json");
     this.loadProof();
@@ -35,12 +39,16 @@ export class VoiceReflection {
 
   async start(): Promise<void> {
     this.started = true;
+    try {
+      const probed = await this.discordPool.probe();
+      this.logger.info("voice token probe", { usable: probed.usable, invalid: probed.invalid, duplicate: probed.duplicate });
+    } catch (error) { this.logger.warn("voice token probe failed", { message: error instanceof Error ? error.message : String(error) }); }
   }
 
   async ingest(event: CanonicalEvent): Promise<void> {
     if (!event.operation.startsWith("voice.")) return;
     if (!this.started) return;
-    if (event.source === "discord" && (event.operation === "voice.join" || event.operation === "voice.leave")) {
+    if ((event.source === "discord" || event.source === "zellous") && (event.operation === "voice.join" || event.operation === "voice.leave")) {
       this.followHuman(event);
       return;
     }
@@ -60,8 +68,10 @@ export class VoiceReflection {
         const identity = this.discordPool.leave(userId);
         if (identity) this.logger.info("voice bot left channel", { identity, humanUserId: userId });
         this.refreshIdentityCount();
+        if (event.source === "discord") await this.releaseDiscordHuman(userId);
         return;
       }
+      if (event.source === "discord") await this.holdDiscordHuman(userId, voice.channelId);
       const joined = await this.discordPool.join(this.config.discordGuildId, voice.channelId, userId, (identity, frame) => this.acceptDiscordFrame(identity, frame));
       if (!joined) {
         this.logger.warn("voice pool has no free identity", { humanUserId: userId, capacity: this.discordPool.capacity() });
@@ -74,6 +84,30 @@ export class VoiceReflection {
       this.logger.error("voice bot join failed", { humanUserId: userId, message: error instanceof Error ? error.message : String(error) });
     });
     this.chains.set(userId, next);
+  }
+
+  private async holdDiscordHuman(userId: string, channelId: string): Promise<void> {
+    await this.releaseDiscordHuman(userId);
+    const set = this.discordHumans.get(channelId) ?? new Set<string>();
+    set.add(userId);
+    this.discordHumans.set(channelId, set);
+    const name = this.channelName(channelId);
+    if (name) await this.zellousBridge.join(name);
+  }
+
+  private async releaseDiscordHuman(userId: string): Promise<void> {
+    for (const [channelId, set] of [...this.discordHumans.entries()]) {
+      if (!set.delete(userId)) continue;
+      if (set.size === 0) {
+        this.discordHumans.delete(channelId);
+        const name = this.channelName(channelId);
+        if (name) await this.zellousBridge.leave(name);
+      }
+    }
+  }
+
+  zellousVoice() {
+    return this.zellousBridge.state();
   }
 
   private refreshIdentityCount(): void {
@@ -101,11 +135,15 @@ export class VoiceReflection {
   }
 
   readiness() {
-    return voiceReadiness(this.config, this.proof);
+    return voiceReadiness(this.config, this.proof, this.discordPool.usableCount());
   }
 
-  sessions(): Array<{ identity: string; botUserId: string; channelId: string; humanCount: number }> {
-    return this.discordPool.boundIdentities().map(function(session) { return { identity: session.identity, botUserId: session.botUserId, channelId: session.channelId, humanCount: session.humanUserIds.length }; });
+  invalidIdentityCount(): number {
+    return this.discordPool.invalidIdentityCount();
+  }
+
+  sessions(): Array<{ identity: string; botUserId: string; channelId: string; humanCount: number; discordHumanCount: number; zellousHumanCount: number }> {
+    return this.discordPool.boundIdentities().map(function(session) { const discord = session.humanUserIds.filter(function(id) { return /^[0-9]{17,20}$/.test(id); }).length; return { identity: session.identity, botUserId: session.botUserId, channelId: session.channelId, humanCount: session.humanUserIds.length, discordHumanCount: discord, zellousHumanCount: session.humanUserIds.length - discord }; });
   }
 
   proofState(): VoiceProof {
@@ -113,6 +151,7 @@ export class VoiceReflection {
   }
 
   async stop(): Promise<void> {
+    await this.zellousBridge.close();
     await this.discordPool.close();
     await this.workers.stopAll();
     for (const peer of this.peers.values()) peer.close();

@@ -36,3 +36,12 @@ test("complete voice requires one identity, frames and both directions and allow
   assert.equal(readiness.complete, true);
   assert.equal(readiness.voiceReflectionComplete, true);
 });
+
+test("tokens that all probe unusable report an unusable pool and stay incomplete", function() {
+  const config = loadConfig({ ...base, DISCORD_PRIVILEGED_INTENTS: "true", DISCORD_VOICE_TOKENS: "token-a,token-b" });
+  const readiness = voiceReadiness(config, { identityCount: 1, frameCount: 4, discordToZellousFrames: 2, zellousToDiscordFrames: 2, mixedAudio: true }, 0);
+  assert.equal(readiness.voicePoolState, "unusable");
+  assert.equal(readiness.reason, "VOICE_TOKENS_UNUSABLE");
+  assert.equal(readiness.complete, false);
+  assert.equal(voiceReadiness(config, emptyVoiceProof(), 1).voicePoolState, "ready");
+});

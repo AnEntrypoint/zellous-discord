@@ -9,6 +9,7 @@ import { roomToZellousChannel } from "../mappers.js";
 import { channelStateContent, dtag } from "../nostr.js";
 import type { RoomRecord } from "../types.js";
 import { discordInventory } from "./inventory.js";
+import { heldRelays } from "../relay-hold.js";
 import { liveGuildIconUrl, liveGuildName, refreshCachedServerName } from "./source.js";
 
 export interface OwnerBundleEvent {
@@ -82,7 +83,7 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const published: OwnerBundleEvent[] = [];
-  const held = String(process.env.RELAY_WRITE_HOLD ?? "").split(",").map(function(url) { return url.trim(); }).filter(Boolean);
+  const held = heldRelays(config.bridgeStateDir);
   for (const event of events) {
     const accepted = new Set<string>();
     const rejected = new Map<string, string>();

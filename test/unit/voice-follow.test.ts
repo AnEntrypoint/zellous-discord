@@ -39,3 +39,22 @@ test("bot voice states and other guilds are ignored", async function() {
   assert.ok(!lines.some(function(line) { return line.includes("voice pool has no free identity") || line.includes("voice bot"); }));
   await instance.stop();
 });
+
+test("a probed pool skips invalid and duplicate voice tokens", async function() {
+  const { DiscordVoicePool } = await import("../../src/voice/discord.js");
+  const dir = mkdtempSync(join(tmpdir(), "zdb-probe-"));
+  const config = loadConfig({ DISCORD_TOKEN: "control-token", DISCORD_GUILD_ID: "367741339393327104", DISCORD_VOICE_TOKENS: "bad-token,good-token,same-bot-token", BRIDGE_STATE_DIR: dir });
+  const original = globalThis.fetch;
+  globalThis.fetch = (async function(_url: unknown, init: { headers: { Authorization: string } }) {
+    const token = init.headers.Authorization.replace("Bot ", "");
+    if (token === "bad-token") return new Response("{}", { status: 401 });
+    return new Response(JSON.stringify({ id: "371753800874065920" }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    const pool = new DiscordVoicePool(config);
+    const result = await pool.probe();
+    assert.deepEqual(result, { usable: 1, invalid: 1, duplicate: 1 });
+    assert.equal(pool.usableCount(), 1);
+    assert.equal(pool.invalidIdentityCount(), 2);
+  } finally { globalThis.fetch = original; }
+});

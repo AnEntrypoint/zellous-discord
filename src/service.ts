@@ -40,7 +40,7 @@ export class BridgeService {
     this.ledger = new Ledger(join(config.bridgeStateDir, "bridge-ledger.jsonl"));
     const mapping = new MappingStore(this.ledger);
     this.echo = new BridgeEchoStore(config.bridgeStateDir);
-    this.voice = new VoiceReflection(resolvedConfig, serverId, this.logger);
+    this.voice = new VoiceReflection(resolvedConfig, serverId, this.logger, (discordId: string) => mapping.allRooms().find((room) => room.discordId === discordId && room.type === "voice")?.name ?? null);
     await this.voice.start();
     if (process.env.ZDBRIDGE_MOCK === "1") {
       this.discord = new MockAdapter("discord", serverId, config.discordGuildId);
@@ -95,6 +95,8 @@ export class BridgeService {
       voiceReadinessReason: readiness?.reason ?? "UNINITIALIZED",
       voiceIdentityCount: readiness?.identityCount ?? 0,
       voiceFrameCount: readiness?.frameCount ?? 0,
+      voiceInvalidTokenCount: this.voice ? this.voice.invalidIdentityCount() : 0,
+      zellousVoiceBridge: this.voice ? this.voice.zellousVoice() : null,
       voiceSessions: this.voice ? this.voice.sessions() : [],
       rooms: state?.rooms.size ?? 0,
       messages: state?.messages.size ?? 0,

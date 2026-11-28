@@ -3,30 +3,42 @@ import { loadConfigFromEnvFile } from "../dist/config.js";
 import { findSecretPattern } from "../dist/redaction.js";
 import { createDiscordRequest } from "./discord-rest.mjs";
 
-function assertSessions(health, voiceStates) {
+function assertSessions(health, voiceStates, channelNames = new Map()) {
   assert.ok(Array.isArray(health.voiceSessions), "health does not report voice sessions");
   assert.ok(health.voiceSessions.length > 0, "voice bridge hidden: no bot is bound to a voice channel");
   for (const session of health.voiceSessions) {
     assert.ok(session.humanCount > 0, "bot bound to a channel with no human");
     assert.equal(voiceStates.get(session.botUserId), session.channelId, "Discord does not show the bot in channel " + session.channelId);
   }
+  for (const session of health.voiceSessions) {
+    if (session.discordHumanCount > 0) {
+      assert.equal(health.zellousVoiceBridge?.connected, true, "Discord join did not start the Zellous voice bridge");
+      assert.equal(health.zellousVoiceBridge?.channel, channelNames.get(session.channelId), "Zellous voice bridge is in the wrong channel");
+    }
+  }
+  if (!health.voiceSessions.some(function(session) { return session.discordHumanCount > 0; })) assert.notEqual(health.zellousVoiceBridge?.connected, true, "Zellous voice bridge joined without a Discord human");
   assert.equal(health.voiceReflectionComplete, false, "voice reported complete without delivered frames");
 }
 
 function selfTest() {
-  const health = { voiceSessions: [{ identity: "voice-bot-1", botUserId: "1", channelId: "9", humanCount: 2 }], voiceReflectionComplete: false };
-  assertSessions(health, new Map([["1", "9"]]));
+  const health = { voiceSessions: [{ identity: "voice-bot-1", botUserId: "1", channelId: "9", humanCount: 2, discordHumanCount: 1, zellousHumanCount: 1 }], zellousVoiceBridge: { connected: true, channel: "room" }, voiceReflectionComplete: false };
+  const names = new Map([["9", "room"]]);
+  assertSessions(health, new Map([["1", "9"]]), names);
+  assertSessions({ ...health, voiceSessions: [{ ...health.voiceSessions[0], discordHumanCount: 0, zellousHumanCount: 2 }], zellousVoiceBridge: { connected: false, channel: null } }, new Map([["1", "9"]]), names);
   const cases = [
     [{ ...health, voiceSessions: [] }, new Map(), "hidden voice bridge did not fail"],
     [health, new Map([["1", "8"]]), "bot in the wrong channel did not fail"],
     [health, new Map(), "bot absent on Discord did not fail"],
     [{ ...health, voiceSessions: [{ ...health.voiceSessions[0], humanCount: 0 }] }, new Map([["1", "9"]]), "bot without a human did not fail"],
     [{ ...health, voiceReflectionComplete: true }, new Map([["1", "9"]]), "complete without frames did not fail"],
+    [{ ...health, zellousVoiceBridge: { connected: false, channel: null } }, new Map([["1", "9"]]), "Discord join without the Zellous bridge did not fail"],
+    [{ ...health, zellousVoiceBridge: { connected: true, channel: "other" } }, new Map([["1", "9"]]), "Zellous bridge in the wrong channel did not fail"],
+    [{ ...health, voiceSessions: [{ ...health.voiceSessions[0], discordHumanCount: 0, zellousHumanCount: 2 }] }, new Map([["1", "9"]]), "Zellous bridge without a Discord human did not fail"],
     [{ voiceReflectionComplete: false }, new Map(), "missing sessions did not fail"]
   ];
   for (const [h, states, label] of cases) {
     let threw = false;
-    try { assertSessions(h, states); } catch { threw = true; }
+    try { assertSessions(h, states, names); } catch { threw = true; }
     assert.ok(threw, label);
   }
   console.log("VOICE_BRIDGE_SELF_TEST_PASS cases=" + String(cases.length));
@@ -42,8 +54,11 @@ async function main() {
     const state = await rest("GET", "/guilds/" + config.discordGuildId + "/voice-states/" + session.botUserId).catch(function() { return null; });
     if (state?.channel_id) states.set(String(session.botUserId), String(state.channel_id));
   }
-  assertSessions(health, states);
-  const output = JSON.stringify({ sessions: health.voiceSessions, discordStates: Object.fromEntries(states) });
+  const names = new Map();
+  const rooms = await rest("GET", "/guilds/" + config.discordGuildId + "/channels");
+  for (const room of rooms) names.set(String(room.id), String(room.name));
+  assertSessions(health, states, names);
+  const output = JSON.stringify({ sessions: health.voiceSessions, zellousVoiceBridge: health.zellousVoiceBridge, discordStates: Object.fromEntries(states) });
   assert.equal(findSecretPattern(output), null, "secret value in output");
   console.log("VOICE_BRIDGE_PASS sessions=" + String(health.voiceSessions.length) + " " + output);
 }

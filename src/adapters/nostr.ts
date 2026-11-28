@@ -9,6 +9,8 @@ import type { Logger } from "../logger.js";
 import { mapZellousChannelToRoom, roomToZellousChannel, type ZellousChannelLike } from "../mappers.js";
 import { createNodeWireweave } from "../wireweave-node.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, RoomRecord, Source } from "../types.js";
+import { voiceBridgePubkey } from "../voice/zellous.js";
+import { VoicePresenceTracker, zellousVoiceRoomId, type PresenceTransition, type VoiceRoomRef } from "../voice/presence.js";
 import { attributionTag, BRIDGE_TAG, channelRoot, discordMessageKey, discordProfileEvent, resolveZellousMessage, rootChannelMap } from "../live/source.js";
 
 export class NostrAdapter implements BridgeAdapter {
@@ -85,10 +87,60 @@ export class NostrAdapter implements BridgeAdapter {
     attach(this.ww.chat, "typing", (detail) => this.sideEvent("message.typing", detail));
     attach(this.ww.presence, "updated", (detail) => this.sideEvent("presence.update", detail));
     attach(this.ww.reactions, "updated", (detail) => this.sideEvent("message.reaction", detail));
+    const stopVoice = this.watchVoicePresence(handler);
     return async () => {
+      stopVoice();
       for (const remove of this.listeners) remove();
       this.listeners = [];
     };
+  }
+
+  private voiceRooms(): VoiceRoomRef[] {
+    return this.mapping.allRooms().filter((room) => room.type === "voice" && room.discordId && room.name).map((room) => ({ roomId: zellousVoiceRoomId(this.serverId, room.name), channelName: room.name, discordId: String(room.discordId) }));
+  }
+
+  private voiceEvent(transition: PresenceTransition): CanonicalEvent {
+    const userId = "zellous:" + transition.pubkey;
+    return createCanonicalEvent({
+      schemaVersion: 1,
+      source: this.source,
+      sourceId: userId,
+      operation: transition.kind === "join" ? "voice.join" : "voice.leave",
+      version: Date.now(),
+      occurredAt: Date.now(),
+      actor: { source: this.source, sourceUserId: transition.pubkey, bridgePubkey: this.publicKey, displayName: transition.pubkey.slice(0, 8), avatarUrl: null },
+      room: null,
+      payload: { voice: { userId, guildId: this.config.discordGuildId, channelId: transition.kind === "join" ? transition.room.discordId : null, bot: false, muted: false, deafened: false, speaking: false } },
+      suppressionKey: null,
+      tracing: [this.source]
+    });
+  }
+
+  private watchVoicePresence(handler: (event: CanonicalEvent) => Promise<void>): () => void {
+    const tracker = new VoicePresenceTracker();
+    const timers: NodeJS.Timeout[] = [];
+    const emit = (transition: PresenceTransition | null) => { if (transition) void handler(this.voiceEvent(transition)); };
+    const attach = (attempt: number) => {
+      const rooms = this.voiceRooms();
+      if (rooms.length === 0) {
+        if (attempt < 12) timers.push(setTimeout(() => attach(attempt + 1), 10000));
+        return;
+      }
+      const byDTag = new Map(rooms.map((room) => ["zellous-voice:" + room.roomId, room]));
+      this.ww.pool.subscribe("zdb-voice-" + this.serverId, [{ kinds: [30078], "#d": [...byDTag.keys()], since: Math.floor(Date.now() / 1000) - 60 }], (event: any) => {
+        const dTag = (event.tags ?? []).find((tag: string[]) => tag[0] === "d")?.[1];
+        const room = byDTag.get(String(dTag));
+        if (!room) return;
+        let data: { action?: string; ts?: number; bridge?: boolean } = {};
+        try { data = JSON.parse(event.content); } catch { return; }
+        if (data.bridge === true || String(event.pubkey) === voiceBridgePubkey(this.config)) return;
+        emit(tracker.observe(room, String(event.pubkey), String(data.action ?? ""), Number(data.ts ?? 0), Date.now()));
+      });
+      this.logger.info("zellous voice presence watched", { rooms: rooms.length });
+    };
+    attach(0);
+    timers.push(setInterval(() => { for (const transition of tracker.sweep(Date.now())) emit(transition); }, 10000));
+    return () => { for (const timer of timers) { clearTimeout(timer); clearInterval(timer); } };
   }
 
   async close(): Promise<void> {
