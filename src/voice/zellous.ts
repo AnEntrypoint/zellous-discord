@@ -1,7 +1,6 @@
 import type { Config } from "../config.js";
 import { deriveSecretKey, loadOrCreateSeed, publicKeyHex } from "../identity.js";
 import type { Logger } from "../logger.js";
-import { writableRelays } from "../relay-hold.js";
 import { createNodeWireweave } from "../wireweave-node.js";
 
 export function voiceBridgeKey(config: Config): Uint8Array {
@@ -28,7 +27,7 @@ export class ZellousVoiceBridge {
 
   private session(): any {
     if (!this.ww) {
-      this.ww = createNodeWireweave(this.config, { secretKey: voiceBridgeKey(this.config), stateSubdir: "voice-bridge", relays: writableRelays(this.config) });
+      this.ww = createNodeWireweave(this.config, { secretKey: voiceBridgeKey(this.config), stateSubdir: "voice-bridge", relays: this.config.nostrRelays });
     }
     return this.ww.ensureVoice({ serverId: this.serverId, displayName: "Discord bridge", onAudioTrack: null, onVideoTrack: null });
   }
@@ -55,7 +54,7 @@ export class ZellousVoiceBridge {
   }
 
   state(): ZellousVoiceState {
-    return { channel: this.channel, connected: this.channel !== null, pubkey: voiceBridgePubkey(this.config), relays: writableRelays(this.config).length };
+    return { channel: this.channel, connected: this.channel !== null, pubkey: voiceBridgePubkey(this.config), relays: this.config.nostrRelays.length };
   }
 
   async close(): Promise<void> {

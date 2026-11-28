@@ -89,3 +89,7 @@ Yes. About twelve changed lines in wireweave plus a test, and four in zellous. O
 ## Not claimed
 
 The rail logo is not shown today and this bridge cannot make it show. No live client was changed.
+
+## Status after deployment
+
+zellous 666ef11 is deployed: Pages serves wireweave 4b73168 (newest kind 34550 event wins, icon tag carried) and the design rail f6df4dd (logo drawn in place of the letter). A fresh-visitor run of source:truth on the live page showed the rail item titled 247420 with an img of class ca-rail-logo whose source is the Discord guild icon URL, and no Discord Bridge text anywhere on the page. The same run recorded per-relay warnings: relay.damus.io answers nothing and nos.lol still holds the old Discord Bridge event with no logo; they do not change what a client shows because the newest event wins. The rail does not list four Discord channels (forum-discussion, ideas-that-might-heal-your-soul, ideas-that-will-ruin-my-life, longpost-longhouse) although the client channel state has all 22; that is reported as a client warning.

@@ -9,7 +9,6 @@ import { roomToZellousChannel } from "../mappers.js";
 import { channelStateContent, dtag } from "../nostr.js";
 import type { RoomRecord } from "../types.js";
 import { discordInventory } from "./inventory.js";
-import { heldRelays } from "../relay-hold.js";
 import { liveGuildIconUrl, liveGuildName, refreshCachedServerName } from "./source.js";
 
 export interface OwnerBundleEvent {
@@ -83,7 +82,6 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const published: OwnerBundleEvent[] = [];
-  const held = heldRelays(config.bridgeStateDir);
   for (const event of events) {
     const accepted = new Set<string>();
     const rejected = new Map<string, string>();
@@ -95,19 +93,15 @@ export async function publishOwnerBundle(config: Config, serverId: string): Prom
       const wanted = JSON.stringify(event.tags) + event.content;
       if (newest && JSON.stringify(newest.tags) + newest.content === wanted) accepted.add(relay);
     }
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const pending = config.nostrRelays.filter(function(url) { return !accepted.has(url) && !held.includes(url); });
-      if (pending.length === 0) break;
-      if (attempt > 0) await new Promise<void>(function(resolve) { setTimeout(resolve, 15000); });
+    const pending = config.nostrRelays.filter(function(url) { return !accepted.has(url); });
+    if (pending.length > 0) {
       const promises = pool.publish(pending, event);
       const timeout = new Promise<PromiseSettledResult<unknown>[]>(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
       const settled = await Promise.race<PromiseSettledResult<unknown>[]>([Promise.allSettled(promises), timeout]);
       settled.forEach(function(entry, index) {
-        if (entry.status === "fulfilled") { accepted.add(pending[index]); rejected.delete(pending[index]); }
+        if (entry.status === "fulfilled") accepted.add(pending[index]);
         else rejected.set(pending[index], String((entry as PromiseRejectedResult).reason?.message ?? (entry as PromiseRejectedResult).reason ?? "rejected"));
       });
-      const retryable = [...rejected.values()].some(function(reason) { return /rate-limited/i.test(reason); });
-      if (!retryable) break;
     }
     const d = (event.tags.find(function(tag: string[]) { return tag[0] === "d"; }) || [])[1] ?? "";
     published.push({ kind: event.kind, eventId: event.id, dTag: d, createdAt: event.created_at, accepted: accepted.size, rejected: Object.fromEntries(rejected) });
