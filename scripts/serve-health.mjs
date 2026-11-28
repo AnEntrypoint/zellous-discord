@@ -21,12 +21,12 @@ let output = "";
 child.stdout.on("data", function(chunk) { output += chunk.toString(); });
 child.stderr.on("data", function(chunk) { output += chunk.toString(); });
 
-await new Promise(function(resolve) { setTimeout(resolve, 5000); });
-
-let response;
-try {
-  response = await fetch("http://127.0.0.1:" + String(port) + "/health");
-} catch (error) {
+let response = null;
+for (let attempt = 0; attempt < 30 && !response; attempt += 1) {
+  await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+  try { response = await fetch("http://127.0.0.1:" + String(port) + "/health", { signal: AbortSignal.timeout(2000) }); } catch { response = null; }
+}
+if (!response) {
   child.kill("SIGTERM");
   throw new Error("health fetch failed; redacted service output: " + findSecretPatternName(output).slice(0, 2000));
 }
