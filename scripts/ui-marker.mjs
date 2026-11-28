@@ -47,7 +47,8 @@ async function relayEvents(roots) {
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   try {
-    return await pool.querySync(config.nostrRelays, { kinds: [42], "#e": roots, since: Math.floor(Date.now() / 1000) - 180, limit: 100 }, { maxWait: 10000 });
+    const timeout = new Promise(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
+    return await Promise.race([pool.querySync(config.nostrRelays, { kinds: [42], "#e": roots, since: Math.floor(Date.now() / 1000) - 180, limit: 100 }, { maxWait: 10000 }), timeout]);
   } finally { pool.destroy(); }
 }
 

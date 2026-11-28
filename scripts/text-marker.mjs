@@ -31,7 +31,8 @@ mkdirSync(dir, { recursive: true });
 async function relayEvents() {
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
-  try { return await pool.querySync(config.nostrRelays, { kinds: [42], "#e": [root], since: Math.floor(Date.now() / 1000) - 120, limit: 50 }, { maxWait: 10000 }); } finally { pool.destroy(); }
+  const timeout = new Promise(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
+  try { return await Promise.race([pool.querySync(config.nostrRelays, { kinds: [42], "#e": [root], since: Math.floor(Date.now() / 1000) - 120, limit: 50 }, { maxWait: 10000 }), timeout]); } finally { pool.destroy(); }
 }
 
 async function main() {
@@ -81,7 +82,7 @@ async function main() {
   const after = await discordRequest("GET", "/guilds/" + config.discordGuildId + "/channels");
   const afterCount = after.length;
   assert.equal(beforeCount, afterCount, "channel count changed");
-  const health = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health");
+  const health = await fetch("http://127.0.0.1:" + String(config.healthPort) + "/health", { signal: AbortSignal.timeout(10000) });
   const healthJson = await health.json();
   const expectedPrivileged = config.privilegedIntentsEnabled;
   assert.equal(healthJson.privilegedIntentsEnabled, expectedPrivileged, "health privileged-intent mismatch");

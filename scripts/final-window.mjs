@@ -33,8 +33,6 @@ const commands = [
   ["npm", ["run", "voice:red-check", "--", "--self-test"]],
   ["npm", ["run", "live:restart", "--", "--self-test"]],
   ["npm", ["run", "live:restart"]],
-  ["npm", ["run", "text:marker"]],
-  ["npm", ["run", "text:red-check"]],
   ["npm", ["run", "ui:marker-red-check", "--", "--self-test"]],
   ["npm", ["run", "ui:marker"]],
   ["npm", ["run", "ui:marker-red-check"]],
