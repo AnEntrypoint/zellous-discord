@@ -92,13 +92,29 @@ export function discordProfileEvent(secretKey: Uint8Array, username: string): an
   return finalizeEvent({ kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: JSON.stringify({ name: username }) }, secretKey);
 }
 
-export async function liveGuildName(config: Config): Promise<string> {
+async function liveGuild(config: Config): Promise<{ name: string; icon: string }> {
   const response = await fetch("https://discord.com/api/v10/guilds/" + config.discordGuildId, { headers: { Authorization: "Bot " + config.discordToken.reveal() }, signal: AbortSignal.timeout(10000) });
   if (!response.ok) throw new Error("Discord guild request failed with status " + String(response.status));
-  const body = await response.json() as { name?: string };
+  const body = await response.json() as { name?: string; icon?: string | null };
   const name = String(body.name ?? "");
+  const icon = String(body.icon ?? "");
   if (!name) throw new Error("Discord guild name missing");
-  return name;
+  if (!icon) throw new Error("Discord guild icon missing");
+  return { name, icon };
+}
+
+export async function liveGuildName(config: Config): Promise<string> {
+  const guild = await liveGuild(config);
+  return guild.name;
+}
+
+export function discordGuildIconUrl(config: Config, icon: string): string {
+  return "https://cdn.discordapp.com/icons/" + config.discordGuildId + "/" + icon + ".png";
+}
+
+export async function liveGuildIconUrl(config: Config): Promise<string> {
+  const guild = await liveGuild(config);
+  return discordGuildIconUrl(config, guild.icon);
 }
 
 function storagePath(config: Config): string {
@@ -111,25 +127,32 @@ function readStorage(config: Config): Record<string, string> {
   try { return JSON.parse(readFileSync(path, "utf8")) as Record<string, string>; } catch { return {}; }
 }
 
-export function cachedServerName(config: Config, serverId: string): string | null {
+function cachedServers(config: Config): Array<Record<string, unknown>> {
   const raw = readStorage(config).zn_servers;
-  if (!raw) return null;
-  try {
-    const servers = JSON.parse(raw) as Array<{ id: string; name: string }>;
-    const found = servers.find(function(server) { return server.id === serverId; });
-    return found ? String(found.name) : null;
-  } catch { return null; }
+  if (!raw) return [];
+  try { return JSON.parse(raw) as Array<Record<string, unknown>>; } catch { return []; }
 }
 
-export function refreshCachedServerName(config: Config, serverId: string, name: string): void {
+export function cachedServerName(config: Config, serverId: string): string | null {
+  const found = cachedServers(config).find(function(server) { return server.id === serverId; });
+  return found ? String(found.name ?? "") : null;
+}
+
+export function cachedServerIcon(config: Config, serverId: string): string | null {
+  const found = cachedServers(config).find(function(server) { return server.id === serverId; });
+  return found ? String(found.icon ?? "") : null;
+}
+
+export function refreshCachedServerName(config: Config, serverId: string, name: string, icon: string): void {
   const values = readStorage(config);
-  let servers: Array<Record<string, unknown>> = [];
-  if (values.zn_servers) {
-    try { servers = JSON.parse(values.zn_servers) as Array<Record<string, unknown>>; } catch { servers = []; }
-  }
+  const servers = cachedServers(config);
   const existing = servers.find(function(server) { return server.id === serverId; });
-  if (existing) existing.name = name;
-  else servers.push({ id: serverId, name, iconColor: "#5865F2" });
+  if (existing) {
+    existing.name = name;
+    existing.icon = icon;
+  } else {
+    servers.push({ id: serverId, name, icon, iconColor: "#5865F2" });
+  }
   values.zn_servers = JSON.stringify(servers);
   writeFileSync(storagePath(config), JSON.stringify(values), { mode: 0o600 });
 }

@@ -50,7 +50,7 @@ const commands = [
 let code = 0;
 try {
   const evidence = readFileSync(evidencePath, "utf8");
-  for (const marker of ["DISCOVER_CARD_VISIBLE", "JOIN_OK", "CHANNELS_OK", "CHAT_OK", "SERVER_NAME_OK"]) if (evidence.indexOf(marker) < 0) throw new Error("browser evidence incomplete: " + marker);
+  for (const marker of ["DISCOVER_CARD_VISIBLE", "JOIN_OK", "CHANNELS_OK", "CHAT_OK", "SERVER_NAME_OK", "LOGO_OK", "VOICE_BRIDGE_OK"]) if (evidence.indexOf(marker) < 0) throw new Error("browser evidence incomplete: " + marker);
   if (evidence.includes("Discord Bridge")) throw new Error("stale browser server name");
   if (!evidence.includes("247420")) throw new Error("live guild name missing from browser evidence");
   if (process.env.GATE_TREE) {

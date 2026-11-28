@@ -27,7 +27,7 @@ function selfTest() {
   const channels = ownerChannels(rooms);
   assert.ok(channels.some(function(channel) { return channel.type === "text"; }));
   assert.ok(channels.some(function(channel) { return channel.type === "page"; }));
-  const events = buildOwnerBundle(config, serverId, rooms, secret, 100, "Live Guild");
+  const events = buildOwnerBundle(config, serverId, rooms, secret, 100, "Live Guild", "https://cdn.discordapp.com/icons/367741339393327104/icon.png");
   assert.equal(events.length, 4);
   assert.equal(events[0].kind, 34550);
   assert.ok(events[1].tags.some(function(tag) { return tag[0] === "d" && String(tag[1]).indexOf("zellous-discover:") === 0; }));
@@ -37,7 +37,7 @@ function selfTest() {
   assert.ok(events[0].created_at < events[1].created_at && events[1].created_at < events[2].created_at && events[2].created_at < events[3].created_at);
   const wrong = generateSecretKey();
   let threw = false;
-  try { buildOwnerBundle(config, serverId, rooms, wrong, 200, "Live Guild"); } catch { threw = true; }
+  try { buildOwnerBundle(config, serverId, rooms, wrong, 200, "Live Guild", "https://cdn.discordapp.com/icons/367741339393327104/icon.png"); } catch { threw = true; }
   assert.ok(threw, "wrong pubkey listing did not fail");
   console.log("DISCOVER_RED_CHECK_SELF_TEST_PASS ownerHex=" + OWNER_HEX);
 }
