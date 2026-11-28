@@ -9,7 +9,7 @@ import type { Logger } from "../logger.js";
 import { mapZellousChannelToRoom, roomToZellousChannel, type ZellousChannelLike } from "../mappers.js";
 import { createNodeWireweave } from "../wireweave-node.js";
 import type { AdapterSnapshot, ApplyResult, BridgeAdapter, CanonicalEvent, RoomRecord, Source } from "../types.js";
-import { attributionTag, BRIDGE_TAG, channelRoot, discordMessageKey, discordProfileEvent, parseAttribution, rootChannelMap } from "../live/source.js";
+import { attributionTag, BRIDGE_TAG, channelRoot, discordMessageKey, discordProfileEvent, resolveZellousMessage, rootChannelMap } from "../live/source.js";
 
 export class NostrAdapter implements BridgeAdapter {
   readonly source: Source = "zellous";
@@ -124,12 +124,11 @@ export class NostrAdapter implements BridgeAdapter {
     const raw = detail.message ?? detail.list?.at?.(-1) ?? detail;
     const eventId = String(raw.id ?? "messages");
     const tags = (raw.tags ?? []) as string[][];
-    const rootTag = tags.find(function(tag) { return tag[0] === "e" && (tag[3] === "root" || !tag[3]); }) ?? tags.find(function(tag) { return tag[0] === "e"; });
-    const root = rootTag?.[1] ?? "";
-    const discordId = root ? rootChannelMap(this.serverId, this.mapping).get(root) : undefined;
-    const username = parseAttribution(tags);
-    if (!root || !discordId || !username) return this.suppressedEvent(eventId, operation);
+    const target = resolveZellousMessage(tags, rootChannelMap(this.serverId, this.mapping), String(raw.pubkey ?? ""));
+    if (!target) return this.suppressedEvent(eventId, operation);
     if (this.echo.isZellous(eventId) || tags.some(function(tag) { return tag[0] === "t" && tag[1] === BRIDGE_TAG; })) return this.suppressedEvent(eventId, operation);
+    const discordId = target.discordId;
+    const username = target.username;
     const zellousChannelId = "room-" + discordId;
     const room = this.mapping.getRoomByDiscordId(discordId);
     const createdAt = Number(raw.created_at ?? Math.floor(Date.now() / 1000)) * 1000;

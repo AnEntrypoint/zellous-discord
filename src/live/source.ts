@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { nip19 } from "nostr-tools";
 import { finalizeEvent } from "nostr-tools/pure";
 import type { Config } from "../config.js";
 import { deriveSecretKey, discordIdentityKey, loadOrCreateSeed, publicKeyHex } from "../identity.js";
@@ -45,6 +46,29 @@ export function parseAttribution(tags: string[][]): string | null {
   const found = tags.filter(function(tag) { return tag[0] === "t" && typeof tag[1] === "string" && tag[1].startsWith(ATTRIBUTION_PREFIX); }).map(function(tag) { return decodeURIComponent(tag[1].slice(ATTRIBUTION_PREFIX.length)); });
   const unique = [...new Set(found)];
   return unique.length === 1 ? unique[0] : null;
+}
+
+export function liveClientAuthor(pubkey: string): string {
+  if (!/^[0-9a-f]{64}$/.test(pubkey)) return "";
+  const npub = nip19.npubEncode(pubkey);
+  return npub.slice(0, 8) + "..." + npub.slice(-4);
+}
+
+export interface ZellousMessageTarget {
+  root: string;
+  discordId: string;
+  username: string;
+}
+
+export function resolveZellousMessage(tags: string[][], roots: Map<string, string>, pubkey: string): ZellousMessageTarget | null {
+  const rootTag = tags.find(function(tag) { return tag[0] === "e" && (tag[3] === "root" || !tag[3]); }) ?? tags.find(function(tag) { return tag[0] === "e"; });
+  const root = rootTag?.[1] ?? "";
+  const discordId = root ? roots.get(root) : undefined;
+  const attributionTags = tags.filter(function(tag) { return tag[0] === "t" && typeof tag[1] === "string" && tag[1].startsWith(ATTRIBUTION_PREFIX); });
+  const attributed = parseAttribution(tags);
+  const username = attributed ?? (attributionTags.length === 0 ? liveClientAuthor(pubkey) : null);
+  if (!root || !discordId || !username || username === "bridge") return null;
+  return { root, discordId, username };
 }
 
 export function visibleDiscordContent(username: string, content: string): string {

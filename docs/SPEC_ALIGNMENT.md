@@ -2,9 +2,10 @@
 
 This document maps the changed facts checked, architecture and done sections of /config/workspace/hyperagent/specs/discord-bridge.md into the repository contract on 2026-11-26.
 
-Current live GitHub Pages wireweave pin: 8a4a5002d878e6f849068106a92339f0f6be02dc.
+Current live GitHub Pages wireweave pin: f944146955ca886370f3de464865f311998cb25b.
 Earlier live pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d; it is historical only.
 Previous live pin: 5d451241587181e471e263f44db993ba8e2d5764; it is historical only.
+Retired live pin: 8a4a5002d878e6f849068106a92339f0f6be02dc; it is historical only.
 Development pin: 4508d66ff4cd3fde31959cc8b998810f367be321.
 The six-file protocol drift is reconciled in docs/LIVE_PIN_DIFF.md: src/hub-liveness.js, src/modules/voice-thread.js, src/vad/clip-filter.js, src/vad/detector.js, src/voice-thread-audio.js and src/voice.js.
 
@@ -50,3 +51,7 @@ Zellous-origin chat resolves its Discord target from the kind 42 e root, not fro
 ## Stage 6 live server identity alignment
 
 Discord REST guild name 247420 is the source of truth for kind 34550 metadata, the owner-signed kind 30078 Discover listing, the cached zn_servers name and the playwriter browser DOM. source:truth prints equality across those five surfaces and across the Discord REST, relay channel snapshot and cached channel-map channel names; source:red-check fails on a stale name, a wrong owner signature, a missing browser channel or a secret value. presence:red-check reads the current live service log and fails on the nullable oldPresence error, degraded presence or a gateway error. The row 26 gate label is already corrected. The active acceptance claim remains stopped and the distinct installed voice identity is held.
+
+## Live Zellous UI reflection alignment
+
+A unique marker typed in the live Zellous inference UI must reach only Discord inference (1073958855979057162), and a second marker typed in warez-and-wonders must reach only its matching Discord channel. ui:marker drives the static Pages client through playwriter, reads the active channel and message input for each send, matches the browser event ID and pubkey to the kind 42 relay event, verifies the canonical e root and visible attribution on the Discord message, and fails on an active-UI channel fallback, a wrong-channel marker, a duplicate or echo, a synthetic publishChatEvent-only witness, an unknown-root post, a stale dist, a changed channel count, more than one live service or a secret value. resolveZellousMessage derives the author from the live client pubkey when no attribution tag exists and keeps unknown roots fail-closed. The current live Pages wireweave pin is f944146955ca886370f3de464865f311998cb25b; the 8a4a5002d878e6f849068106a92339f0f6be02dc drift changes only src/unread.js and no protocol file. The active acceptance claim remains stopped and the distinct installed voice identity is held.

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const nl = String.fromCharCode(10);
-const livePin = "8a4a5002d878e6f849068106a92339f0f6be02dc";
+const livePin = "f944146955ca886370f3de464865f311998cb25b";
 const previousLivePin = "5d451241587181e471e263f44db993ba8e2d5764";
 const devPin = "4508d66ff4cd3fde31959cc8b998810f367be321";
 const liveRelays = ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol", "wss://relay.snort.social"];

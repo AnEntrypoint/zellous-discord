@@ -5,6 +5,7 @@ const docs = ["docs/SPEC_ALIGNMENT.md", "docs/PROTOCOL.md", "docs/RESEARCH.md", 
 const texts = new Map(docs.map(function(file) { return [file, readFileSync(file, "utf8")]; }));
 const all = [...texts.values()].join(String.fromCharCode(10));
 const needles = [
+  "f944146955ca886370f3de464865f311998cb25b",
   "8a4a5002d878e6f849068106a92339f0f6be02dc",
   "2e364df5f45b29e8f5cf6e747a0c2e9781352e0d",
   "4508d66ff4cd3fde31959cc8b998810f367be321",
@@ -68,5 +69,5 @@ function selfTest() {
 if (process.argv.includes("--self-test")) selfTest();
 else {
   assertAlignment(all);
-  console.log("SPEC_ALIGNMENT_PASS docs=" + String(docs.length) + " currentPin=8a4a5002d878e6f849068106a92339f0f6be02dc");
+  console.log("SPEC_ALIGNMENT_PASS docs=" + String(docs.length) + " currentPin=f944146955ca886370f3de464865f311998cb25b");
 }
