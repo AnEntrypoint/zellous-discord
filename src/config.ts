@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { LogLevel } from "./logger.js";
 
-export const LIVE_WIREWEAVE_PIN = "a370a9b15d9c3fa916e7312df6682d0a27cc2293";
+export const LIVE_WIREWEAVE_PIN = "115f7da3034a79662887fc4a45d3c3b1224bb43a";
 export const DEVELOPMENT_WIREWEAVE_PIN = "4508d66ff4cd3fde31959cc8b998810f367be321";
 export const LIVE_PAGES_URL = "https://anentrypoint.github.io/zellous/";
 export const OWNER_NPUB = "npub1nz90wez9p4cj3csw35csqnhmw9lazz4l6709wgjyvkrrmq2xsugsx4cz42";

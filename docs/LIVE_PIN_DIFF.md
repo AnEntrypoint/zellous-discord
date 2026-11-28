@@ -2,13 +2,14 @@
 
 Live GitHub Pages source of truth: https://anentrypoint.github.io/zellous/
 
-Current live wireweave pin: a370a9b15d9c3fa916e7312df6682d0a27cc2293.
+Current live wireweave pin: 115f7da3034a79662887fc4a45d3c3b1224bb43a.
+Prior live wireweave pin: a370a9b15d9c3fa916e7312df6682d0a27cc2293; GitHub comparison to the current pin changes exactly src/voice-thread-audio.js and no protocol file.
 Previous live wireweave pin: f944146955ca886370f3de464865f311998cb25b.
 Earlier spec live pin: 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d.
 Development wireweave pin: 4508d66ff4cd3fde31959cc8b998810f367be321.
 All four pins report wireweave version 0.3.64.
 
-The live Pages nostr-chat import map currently pins wireweave to a370a9b15d9c3fa916e7312df6682d0a27cc2293. The live Pages wireweave-bridge still passes state.nostrRelays or the default set wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol, wss://relay.snort.social to createWireweave. The dispatcher chose the live Pages artifact and four-relay default as the bridge source of truth. ZELLOUS_RELAYS is an optional comma-separated override. NOSTR_RELAYS remains a compatibility alias. No owner relay-set confirmation remains.
+The live Pages nostr-chat import map currently pins wireweave to 115f7da3034a79662887fc4a45d3c3b1224bb43a. The live Pages wireweave-bridge still passes state.nostrRelays or the default set wss://relay.damus.io, wss://relay.primal.net, wss://nos.lol, wss://relay.snort.social to createWireweave. The dispatcher chose the live Pages artifact and four-relay default as the bridge source of truth. ZELLOUS_RELAYS is an optional comma-separated override. NOSTR_RELAYS remains a compatibility alias. No owner relay-set confirmation remains.
 
 The spec recorded live pin 2e364df5f45b29e8f5cf6e747a0c2e9781352e0d, but a fresh live Pages read on 2026-11-26 resolved to 5d451241587181e471e263f44db993ba8e2d5764, a cache-busting live Pages read on 2026-11-27 resolved to 8a4a5002d878e6f849068106a92339f0f6be02dc, and a live Pages read on 2026-11-28 resolved to a370a9b15d9c3fa916e7312df6682d0a27cc2293. Runtime follows the current live Pages artifact. The earlier pins are historical only; docs/SPEC_ALIGNMENT.md records the drift and publication is no longer held for that document.
 

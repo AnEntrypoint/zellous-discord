@@ -5,7 +5,7 @@ import { DEVELOPMENT_WIREWEAVE_PIN, LIVE_DEFAULT_RELAYS, LIVE_WIREWEAVE_PIN } fr
 import { VOICE_FIELDS } from "../../src/contract.js";
 
 test("Stage 5 uses the live Pages pin and four-relay default", () => {
-  assert.equal(LIVE_WIREWEAVE_PIN, "a370a9b15d9c3fa916e7312df6682d0a27cc2293");
+  assert.equal(LIVE_WIREWEAVE_PIN, "115f7da3034a79662887fc4a45d3c3b1224bb43a");
   assert.equal(DEVELOPMENT_WIREWEAVE_PIN, "4508d66ff4cd3fde31959cc8b998810f367be321");
   assert.deepEqual(LIVE_DEFAULT_RELAYS, ["wss://relay.damus.io", "wss://relay.primal.net", "wss://nos.lol", "wss://relay.snort.social"]);
 });
