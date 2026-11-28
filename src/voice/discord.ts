@@ -121,6 +121,7 @@ export class DiscordVoicePool {
       throw error;
     }
     const guild = await client.guilds.fetch(guildId);
+    await guild.channels.fetch(channelId);
     const connection = joinVoiceChannel({ channelId, guildId, adapterCreator: guild.voiceAdapterCreator, selfMute: false, selfDeaf: false });
     await entersState(connection, VoiceConnectionStatus.Ready, 15000);
     const stream = new PassThrough();
@@ -138,6 +139,8 @@ export class DiscordVoicePool {
       const identity = "voice-bot-" + String(index + 1);
       const client = await this.clientFor(index);
       const guild = await client.guilds.fetch(guildId);
+      await guild.channels.fetch(channelId);
+    await guild.channels.fetch(channelId);
       const connection = joinVoiceChannel({ channelId, guildId, adapterCreator: guild.voiceAdapterCreator, selfMute: false, selfDeaf: false });
       await entersState(connection, VoiceConnectionStatus.Ready, 10000);
       const stream = new PassThrough();
