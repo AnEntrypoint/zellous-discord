@@ -24,8 +24,8 @@ export async function publishChatEvent(config: Config, serverId: string, channel
   useWebSocketImplementation(globalThis.WebSocket);
   const pool = new SimplePool({ enableReconnect: true });
   const promises = pool.publish(config.nostrRelays, event);
-  const timeout = new Promise(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
-  const settled = await Promise.race([Promise.allSettled(promises), timeout]);
+  const timeout = new Promise<PromiseSettledResult<unknown>[]>(function(resolve) { setTimeout(function() { resolve([]); }, 10000); });
+  const settled = await Promise.race<PromiseSettledResult<unknown>[]>([Promise.allSettled(promises), timeout]);
   pool.destroy();
   const accepted = settled.filter(function(entry) { return entry.status === "fulfilled"; }).length;
   return { ok: accepted > 0, eventId: event.id, serverId, channelId, channelHash: hash, username, accepted };
